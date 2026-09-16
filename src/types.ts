@@ -48,8 +48,6 @@ export const CATEGORY_LABEL: Record<LocationCategory, string> = {
 
 export const NEARBY_RADIUS_OPTIONS = [25, 50, 100] as const
 export const DEFAULT_RADIUS_MILES = 50
-export const US_CENTER: Coord = { lat: 39.5, lng: -98.35 }
-export const US_ZOOM = 3.4
 /** Continental US — used so a tall map pane still shows both coasts. */
 export const CONUS_BOUNDS: [[number, number], [number, number]] = [
   [-125.2, 24.3],
