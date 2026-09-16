@@ -299,7 +299,7 @@ function LandingView({
   return (
     <div className="hero-wash flex min-h-[calc(100dvh-3.25rem)] flex-col">
       <main className="mx-auto flex w-full max-w-[46rem] flex-1 flex-col items-center justify-center px-5 py-10 text-center sm:py-16 md:py-20">
-        <WaveMark className="h-12 w-12 sm:h-14 sm:w-14" title="Shiftwave" />
+        <WaveMark className="h-9 w-[6.75rem] text-cta sm:h-11 sm:w-[8.25rem]" title="Shiftwave" />
         <h1 className="mt-7 font-display text-[2.05rem] font-semibold leading-[1.3] tracking-normal text-ink sm:text-[2.75rem] md:text-[3.15rem]">
           Where Can I <em className="font-semibold italic">Try</em> Shiftwave?
         </h1>
@@ -402,7 +402,7 @@ function ResultsView({
               className="focus-ring flex min-w-0 items-center gap-2.5 rounded-full text-left"
               onClick={onReset}
             >
-              <WaveMark className="h-8 w-8 shrink-0" title="Shiftwave" />
+              <WaveMark className="h-7 w-[5.15rem] shrink-0 text-cta" title="Shiftwave" />
               <span className="font-display text-[0.98rem] font-semibold leading-[1.3] tracking-normal text-ink sm:text-xl">
                 <span className="sm:hidden">Try Shiftwave</span>
                 <span className="hidden sm:inline">
