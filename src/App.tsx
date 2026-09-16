@@ -285,9 +285,6 @@ type LandingViewProps = {
 
 const RESET_LINES = ['Reset Mentally.', 'Reset Physically.', 'Reset Emotionally.'] as const
 
-const HERO_BODY =
-  'Shiftwave uses pulsed pressure waves and breath-guided audio to support your body’s natural stress and recovery responses, working below conscious effort to help you feel calm, clear, or ready when it matters most.'
-
 function LandingView({
   query,
   onQueryChange,
@@ -310,9 +307,6 @@ function LandingView({
           {RESET_LINES.map((line) => (
             <span key={line}>{line}</span>
           ))}
-        </p>
-        <p className="mt-4 max-w-xl text-[0.98rem] font-medium leading-relaxed tracking-[-0.005em] text-ink-soft sm:max-w-[40rem] sm:text-[1.05rem] sm:leading-[1.55]">
-          {HERO_BODY}
         </p>
 
         <div className="search-aura mt-9 w-full sm:mt-11">
