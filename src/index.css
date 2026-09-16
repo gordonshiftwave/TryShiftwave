@@ -108,6 +108,41 @@ textarea {
     radial-gradient(ellipse 62% 50% at 84% 30%, rgb(224 165 128 / 0.22), transparent 60%);
 }
 
+.reset-stanza {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.12em;
+}
+
+.reset-stanza > span {
+  display: block;
+  animation: reset-line-in 640ms var(--ease-out) both;
+}
+
+.reset-stanza > span:nth-child(1) {
+  animation-delay: 40ms;
+}
+
+.reset-stanza > span:nth-child(2) {
+  animation-delay: 220ms;
+}
+
+.reset-stanza > span:nth-child(3) {
+  animation-delay: 400ms;
+}
+
+@keyframes reset-line-in {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .search-aura {
   position: relative;
 }
@@ -546,7 +581,8 @@ textarea {
   }
 
   .reveal,
-  .origin-mark__pulse {
+  .origin-mark__pulse,
+  .reset-stanza > span {
     animation: none;
   }
 
