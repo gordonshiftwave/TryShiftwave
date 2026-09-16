@@ -23,7 +23,7 @@ export function LocationCard({ place, active, onSelect, onHover }: LocationCardP
     <article
       id={`place-${place.id}`}
       data-active={active}
-      className="place-row focus-ring cursor-pointer px-3 py-4 sm:px-4"
+      className="place-row focus-ring cursor-pointer px-3.5 py-3.5 sm:px-5 sm:py-4"
       tabIndex={0}
       role="button"
       aria-pressed={active}
@@ -39,27 +39,27 @@ export function LocationCard({ place, active, onSelect, onHover }: LocationCardP
       onFocus={() => onHover(place.id)}
       onBlur={() => onHover(null)}
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-3 sm:gap-5">
         <div className="min-w-0">
-          <h3 className="font-display text-[1.2rem] leading-tight font-medium tracking-tight text-ink sm:text-[1.28rem]">
+          <h3 className="font-display text-[1.05rem] leading-[1.2] font-medium tracking-tight text-ink sm:text-[1.18rem]">
             {place.name}
           </h3>
-          <p className="mt-1 flex items-center gap-2 text-[0.95rem] text-ink-faint">
-            <span className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${PIN_COLOR[pinKind(place.category)]}`} />
-            <span>
+          <p className="mt-0.5 flex items-center gap-2 text-[0.78rem] leading-snug text-ink-faint sm:text-[0.82rem]">
+            <span
+              className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${PIN_COLOR[pinKind(place.category)]}`}
+            />
+            <span className="truncate">
               {categoryLabel(place.category)}
               {place.region ? ` · ${place.region}` : ''}
             </span>
           </p>
         </div>
         {place.distanceMiles != null && (
-          <span className="shrink-0 pt-0.5 text-sm tabular-nums text-ink-soft">
-            {formatMiles(place.distanceMiles)}
-          </span>
+          <span className="distance-chip mt-0.5">{formatMiles(place.distanceMiles)}</span>
         )}
       </div>
 
-      <dl className="mt-2.5 space-y-1 text-[0.95rem] text-ink-soft">
+      <dl className="mt-1.5 space-y-0.5 text-[0.88rem] leading-relaxed text-ink-soft sm:text-[0.92rem]">
         {address && (
           <div>
             <dt className="sr-only">Address</dt>
@@ -83,7 +83,7 @@ export function LocationCard({ place, active, onSelect, onHover }: LocationCardP
           </div>
         )}
         {(place.phone || place.email) && (
-          <div className="flex flex-wrap gap-x-4 gap-y-1">
+          <div className="flex flex-wrap gap-x-4 gap-y-0.5">
             {place.phone && (
               <dd>
                 <a

@@ -36,7 +36,7 @@ Geocoding uses Zippopotam.us (US ZIP codes) with OpenStreetMap Nominatim / Photo
 - Empty / no-nearby state shows the closest qualified try-spots
 - Mobile-first layout; `prefers-reduced-motion` disables fly/fit animation and the results reveal
 
-Brand tokens follow Stethoscope Design (paper / cream / sand surfaces, Fraunces + Source Sans 3). Shiftwave marketing chrome (dark UI, orange `#E43A00`, purple `#3911AC`) is intentionally not used.
+Brand tokens follow Stethoscope Design (paper / cream / sand surfaces, Fraunces + Source Sans 3). Color science and the Google-like search pattern are documented in [`DESIGN.md`](DESIGN.md). Shiftwave marketing chrome (dark UI, orange `#E43A00`, purple `#3911AC`) is intentionally not used.
 
 ## Data module
 

@@ -258,7 +258,7 @@ export function App() {
 
 function LiveListBanner() {
   return (
-    <div className="border-b border-line bg-sand/80">
+    <div className="live-banner">
       <p className="mx-auto flex max-w-[1180px] items-start gap-3 px-5 py-2.5 text-sm text-ink-soft md:px-8">
         <span className="mt-1 inline-block h-2 w-2 shrink-0 rounded-full bg-rise-deep" />
         <span>
@@ -295,17 +295,17 @@ function LandingView({
   loadFailed,
 }: LandingViewProps) {
   return (
-    <div className="hero-wash flex min-h-[calc(100vh-3.25rem)] flex-col">
-      <main className="mx-auto flex w-full max-w-[44rem] flex-1 flex-col items-center justify-center px-5 py-16 text-center md:py-24">
+    <div className="hero-wash flex min-h-[calc(100dvh-3.25rem)] flex-col">
+      <main className="mx-auto flex w-full max-w-[46rem] flex-1 flex-col items-center justify-center px-5 py-14 text-center sm:py-20 md:py-24">
         <WaveMark className="h-7 w-16 text-rise-deep" title="Shiftwave line-wave mark" />
-        <h1 className="mt-6 font-display text-[2.35rem] leading-[1.08] font-medium tracking-tight text-ink sm:text-5xl md:text-[3.25rem]">
+        <h1 className="mt-7 font-display text-[2.2rem] leading-[1.08] font-medium tracking-tight text-ink sm:text-5xl md:text-[3.35rem]">
           Where Can I <em className="font-medium italic">Try</em> Shiftwave?
         </h1>
-        <p className="mt-4 max-w-lg text-lg leading-relaxed text-ink-soft">
+        <p className="mt-4 max-w-md text-[1.05rem] leading-relaxed text-ink-soft sm:max-w-lg sm:text-lg">
           Find a public try-spot near you — full-body pulsed pressure and guided breathwork.
         </p>
 
-        <div className="mt-10 w-full">
+        <div className="search-aura mt-11 w-full sm:mt-12">
           <SearchBar
             variant="hero"
             query={query}
@@ -390,7 +390,7 @@ function ResultsView({
 }: ResultsViewProps) {
   return (
     <>
-      <header className="border-b border-line bg-cream">
+      <header className="results-chrome">
         <div className="mx-auto flex max-w-[1180px] flex-col gap-3 px-5 py-3 md:px-8">
           <div className="flex items-center justify-between gap-3">
             <button
@@ -399,13 +399,13 @@ function ResultsView({
               onClick={onReset}
             >
               <WaveMark className="h-5 w-12 shrink-0" title="Shiftwave line-wave mark" />
-              <span className="font-display text-base leading-snug font-medium tracking-tight text-ink sm:text-xl">
+              <span className="font-display text-[0.98rem] leading-snug font-medium tracking-tight text-ink sm:text-xl">
                 Where Can I <em className="font-medium italic">Try</em> Shiftwave?
               </span>
             </button>
             <button
               type="button"
-              className="focus-ring shrink-0 rounded-full px-2 py-1 text-sm text-ink-soft underline decoration-line underline-offset-4"
+              className="focus-ring shrink-0 rounded-full border border-line bg-cream px-3 py-1.5 text-sm text-ink-soft hover:bg-sand"
               onClick={onReset}
             >
               New search
@@ -423,10 +423,10 @@ function ResultsView({
         </div>
       </header>
 
-      <main className="reveal mx-auto grid max-w-[1180px] gap-6 px-5 py-6 md:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] md:items-start md:px-8 md:py-8 lg:gap-8">
+      <main className="reveal mx-auto grid max-w-[1180px] gap-5 px-4 py-5 sm:px-5 sm:py-6 md:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] md:items-start md:gap-7 md:px-8 md:py-8 lg:gap-8">
         <section id="results" className="order-2 md:order-1">
-          <div className="mb-5">
-            <h2 className="font-display text-[1.65rem] leading-tight font-medium text-ink">
+          <div className="mb-4 sm:mb-5">
+            <h2 className="font-display text-[1.45rem] leading-tight font-medium text-ink sm:text-[1.7rem]">
               {resultLabel}
             </h2>
             <div className="mt-3 flex flex-wrap items-center gap-1.5">
@@ -435,11 +435,7 @@ function ResultsView({
                 <button
                   key={miles}
                   type="button"
-                  className={`focus-ring rounded-full px-3 py-1 text-sm ${
-                    radius === miles
-                      ? 'bg-rise-deep text-cream'
-                      : 'border border-line bg-cream text-ink-soft'
-                  }`}
+                  className="radius-chip focus-ring"
                   onClick={() => onRadius(miles)}
                   aria-pressed={radius === miles}
                 >
@@ -478,9 +474,11 @@ function ResultsView({
             />
           )}
 
-          {emptyNearby && <p className="mb-2 text-sm font-medium text-ink-faint">Closest try-spots</p>}
+          {emptyNearby && (
+            <p className="mb-2 text-sm font-medium text-ink-faint">Closest try-spots</p>
+          )}
 
-          <ul className="place-list">
+          <ul className="place-list place-panel">
             {list.map((place) => (
               <li key={place.id}>
                 <LocationCard
@@ -494,7 +492,7 @@ function ResultsView({
           </ul>
         </section>
 
-        <section className="order-1 h-[42vh] min-h-[280px] md:sticky md:top-4 md:order-2 md:aspect-[5/4] md:h-auto md:min-h-[480px] md:max-h-[calc(100vh-8rem)]">
+        <section className="order-1 h-[38vh] min-h-[240px] sm:h-[42vh] sm:min-h-[280px] md:sticky md:top-[5.5rem] md:order-2 md:aspect-[5/4] md:h-auto md:min-h-[480px] md:max-h-[calc(100dvh-8rem)]">
           <MapCanvas
             locations={ranked}
             origin={origin}

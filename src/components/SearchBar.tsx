@@ -34,8 +34,8 @@ export function SearchBar({
       onSubmit={handleSubmit}
       className={
         isHero
-          ? 'mx-auto w-full max-w-[40rem]'
-          : 'flex w-full flex-col gap-1 sm:flex-row sm:items-center'
+          ? 'mx-auto w-full max-w-[42rem]'
+          : 'flex w-full flex-col gap-1 sm:flex-row sm:items-center sm:gap-3'
       }
       role="search"
     >
@@ -51,7 +51,7 @@ export function SearchBar({
         }
       >
         <span className="search-shell__icon text-ink-faint" aria-hidden="true">
-          <SearchIcon />
+          <SearchIcon size={isHero ? 22 : 18} />
         </span>
         <input
           id={inputId}
@@ -64,7 +64,7 @@ export function SearchBar({
           disabled={disabled}
           className={
             isHero
-              ? 'search-shell__input min-h-14 text-lg sm:min-h-16 sm:text-xl'
+              ? 'search-shell__input min-h-[3.65rem] text-[1.05rem] sm:min-h-[4.15rem] sm:text-[1.28rem]'
               : 'search-shell__input min-h-11 text-base'
           }
         />
@@ -72,8 +72,8 @@ export function SearchBar({
           type="submit"
           className={
             isHero
-              ? 'focus-ring m-1.5 min-h-11 shrink-0 rounded-full bg-rise-deep px-5 text-base font-semibold text-cream sm:min-h-12 sm:px-6'
-              : 'focus-ring m-1 min-h-9 shrink-0 rounded-full bg-rise-deep px-4 text-sm font-semibold text-cream'
+              ? 'search-submit focus-ring m-1.5 min-h-12 shrink-0 rounded-full px-5 text-base font-semibold sm:min-h-[3.15rem] sm:px-7'
+              : 'search-submit focus-ring m-1 min-h-9 shrink-0 rounded-full px-4 text-sm font-semibold'
           }
           disabled={disabled || searching}
         >
@@ -81,12 +81,12 @@ export function SearchBar({
         </button>
       </div>
 
-      <div className={isHero ? 'mt-4 flex justify-center' : 'flex justify-start sm:justify-center'}>
+      <div className={isHero ? 'mt-5 flex justify-center' : 'flex justify-start sm:justify-center'}>
         <button
           type="button"
           className={
             isHero
-              ? 'focus-ring inline-flex items-center gap-2 rounded-full px-3 py-2 text-base font-medium text-focus hover:text-rise-deep'
+              ? 'focus-ring inline-flex items-center gap-2 rounded-full px-3 py-2 text-base font-medium text-focus hover:bg-cream/70 hover:text-rise-deep'
               : 'focus-ring inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1.5 text-sm font-medium text-focus hover:text-rise-deep'
           }
           onClick={() => void onUseLocation()}
@@ -100,9 +100,9 @@ export function SearchBar({
   )
 }
 
-function SearchIcon() {
+function SearchIcon({ size }: { size: number }) {
   return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+    <svg width={size} height={size} viewBox="0 0 20 20" fill="none" aria-hidden="true">
       <circle cx="8.5" cy="8.5" r="5.25" stroke="currentColor" strokeWidth="1.7" />
       <path d="M12.4 12.4 16.2 16.2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
     </svg>

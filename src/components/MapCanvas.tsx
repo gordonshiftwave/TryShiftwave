@@ -4,18 +4,12 @@ import { setWorkerUrl } from 'maplibre-gl'
 import type { Map as MapLibreMap, Marker } from 'maplibre-gl'
 import type { Feature, Polygon, MultiPolygon } from 'geojson'
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
-import { CONUS_BOUNDS, pinKind, type Coord, type LocationCategory, type RankedLocation } from '../types'
+import { CONUS_BOUNDS, pinKind, type Coord, type RankedLocation } from '../types'
 import { prefersReducedMotion } from '../geo/distance'
 import { addStateLayers, applyPaperTheme, boundsFromPositions } from '../geo/mapStyle'
 
 setWorkerUrl(workerUrl.endsWith('.mjs') ? workerUrl : `${workerUrl}#.mjs`)
 
-const PIN_FILL: Record<LocationCategory, string> = {
-  clinic: '#b7d3e3',
-  gym: '#e4a894',
-  wellness: '#9fbe99',
-  studio: '#b8a7c8',
-}
 
 export type MapFocus =
   | { type: 'us' }
@@ -157,8 +151,10 @@ export function MapCanvas({
     originMarkerRef.current = null
     if (!origin) return
     const el = document.createElement('div')
-    el.className = 'h-3.5 w-3.5 rounded-full bg-focus ring-4 ring-cream'
+    el.className = 'origin-mark'
     el.setAttribute('aria-hidden', 'true')
+    el.innerHTML =
+      '<span class="origin-mark__pulse"></span><span class="origin-mark__core"></span>'
     originMarkerRef.current = new maplibregl.Marker({ element: el, anchor: 'center' })
       .setLngLat([origin.lng, origin.lat])
       .addTo(map)
@@ -187,8 +183,8 @@ export function MapCanvas({
   }, [focus])
 
   return (
-    <div className="map-shell paper-card relative h-full min-h-[280px] overflow-hidden p-1.5 md:min-h-[480px]">
-      <div ref={containerRef} className="h-full min-h-[268px] overflow-hidden rounded-[22px] md:min-h-[468px]" />
+    <div className="map-shell paper-card relative h-full min-h-[240px] overflow-hidden p-1.5 md:min-h-[480px]">
+      <div ref={containerRef} className="h-full min-h-[228px] overflow-hidden rounded-[22px] md:min-h-[468px]" />
     </div>
   )
 }
@@ -196,12 +192,11 @@ export function MapCanvas({
 function pinElement(place: RankedLocation): HTMLButtonElement {
   const button = document.createElement('button')
   button.type = 'button'
-  button.className = 'sw-pin'
+  button.className = `sw-pin sw-pin--${pinKind(place.category)}`
   button.setAttribute('aria-label', place.name)
-  const fill = PIN_FILL[pinKind(place.category)]
   button.innerHTML = `<svg class="sw-pin__glyph" viewBox="0 0 28 28" aria-hidden="true">
-    <path d="M14 2.5c-5.2 0-9.4 4.1-9.4 9.2 0 6.6 9.4 14 9.4 14s9.4-7.4 9.4-14c0-5.1-4.2-9.2-9.4-9.2z" fill="${fill}" stroke="#3d6d62" stroke-width="1.6"/>
-    <circle cx="14" cy="11.2" r="3.15" fill="#fbf8f2"/>
+    <path class="sw-pin__shape" d="M14 2.5c-5.2 0-9.4 4.1-9.4 9.2 0 6.6 9.4 14 9.4 14s9.4-7.4 9.4-14c0-5.1-4.2-9.2-9.4-9.2z"/>
+    <circle class="sw-pin__dot" cx="14" cy="11.2" r="3.15"/>
   </svg>`
   return button
 }
