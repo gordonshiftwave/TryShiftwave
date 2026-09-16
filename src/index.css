@@ -297,8 +297,15 @@ textarea {
 }
 
 .mic-btn--hero {
-  width: 2.85rem;
-  height: 2.85rem;
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+@media (min-width: 640px) {
+  .mic-btn--hero {
+    width: 2.85rem;
+    height: 2.85rem;
+  }
 }
 
 .mic-btn--compact {
@@ -629,7 +636,11 @@ textarea {
 
 @media (max-width: 640px) {
   .search-shell__icon {
-    padding-left: 0.95rem;
+    padding-left: 0.8rem;
+  }
+
+  .search-shell--hero .search-shell__icon {
+    padding-left: 0.85rem;
   }
 
   .search-aura::before {

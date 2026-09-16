@@ -100,7 +100,7 @@ export function SearchBar({
             type="submit"
             className={
               isHero
-                ? 'search-submit focus-ring m-1.5 min-h-12 shrink-0 rounded-full px-5 text-base font-medium sm:min-h-[3.15rem] sm:px-7'
+                ? 'search-submit focus-ring m-1 min-h-11 shrink-0 rounded-full px-3.5 text-[0.95rem] font-medium sm:m-1.5 sm:min-h-[3.15rem] sm:px-7 sm:text-base'
                 : 'search-submit focus-ring m-1 min-h-9 shrink-0 rounded-full px-4 text-sm font-medium'
             }
             disabled={disabled || searching}
