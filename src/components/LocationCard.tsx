@@ -1,22 +1,16 @@
-import { categoryLabel, pinKind, type LocationCategory, type RankedLocation } from '../types'
+import { categoryLabel, type RankedLocation } from '../types'
 import { formatAddress, mapsUrl } from '../data/parse'
 import { formatMiles } from '../geo/distance'
-
-const PIN_COLOR: Record<LocationCategory, string> = {
-  clinic: 'bg-sky',
-  gym: 'bg-coral',
-  wellness: 'bg-sage',
-  studio: 'bg-lavender',
-}
 
 type LocationCardProps = {
   place: RankedLocation
   active: boolean
+  nearest?: boolean
   onSelect: () => void
   onHover: (id: string | null) => void
 }
 
-export function LocationCard({ place, active, onSelect, onHover }: LocationCardProps) {
+export function LocationCard({ place, active, nearest = false, onSelect, onHover }: LocationCardProps) {
   const address = formatAddress(place)
 
   return (
@@ -41,17 +35,15 @@ export function LocationCard({ place, active, onSelect, onHover }: LocationCardP
     >
       <div className="flex items-start justify-between gap-3 sm:gap-5">
         <div className="min-w-0">
-          <h3 className="font-display text-[1.05rem] leading-[1.2] font-medium tracking-tight text-ink sm:text-[1.18rem]">
-            {place.name}
-          </h3>
-          <p className="mt-0.5 flex items-center gap-2 text-[0.78rem] leading-snug text-ink-faint sm:text-[0.82rem]">
-            <span
-              className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${PIN_COLOR[pinKind(place.category)]}`}
-            />
-            <span className="truncate">
-              {categoryLabel(place.category)}
-              {place.region ? ` · ${place.region}` : ''}
-            </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-display text-[1.05rem] leading-[1.2] font-medium tracking-tight text-ink sm:text-[1.18rem]">
+              {place.name}
+            </h3>
+            {nearest && <span className="nearest-mark">Nearest</span>}
+          </div>
+          <p className="mt-0.5 truncate text-[0.78rem] leading-snug text-ink-faint sm:text-[0.82rem]">
+            {categoryLabel(place.category)}
+            {place.region ? ` · ${place.region}` : ''}
           </p>
         </div>
         {place.distanceMiles != null && (
@@ -65,7 +57,7 @@ export function LocationCard({ place, active, onSelect, onHover }: LocationCardP
             <dt className="sr-only">Address</dt>
             <dd>
               <a
-                className="focus-ring rounded-sm underline decoration-line underline-offset-4 hover:text-focus"
+                className="focus-ring rounded-sm underline decoration-line underline-offset-4 hover:text-aqua-deep"
                 href={mapsUrl(place)}
                 target="_blank"
                 rel="noreferrer"
@@ -87,7 +79,7 @@ export function LocationCard({ place, active, onSelect, onHover }: LocationCardP
             {place.phone && (
               <dd>
                 <a
-                  className="focus-ring rounded-sm hover:text-focus"
+                  className="focus-ring rounded-sm hover:text-aqua-deep"
                   href={`tel:${place.phone.replace(/[^\d+]/g, '')}`}
                   onClick={(event) => event.stopPropagation()}
                 >
@@ -98,7 +90,7 @@ export function LocationCard({ place, active, onSelect, onHover }: LocationCardP
             {place.email && (
               <dd>
                 <a
-                  className="focus-ring rounded-sm hover:text-focus"
+                  className="focus-ring rounded-sm hover:text-aqua-deep"
                   href={`mailto:${place.email}`}
                   onClick={(event) => event.stopPropagation()}
                 >

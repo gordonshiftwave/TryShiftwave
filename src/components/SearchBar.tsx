@@ -50,7 +50,7 @@ export function SearchBar({
             : 'search-shell search-shell--compact min-w-0 sm:flex-1'
         }
       >
-        <span className="search-shell__icon text-ink-faint" aria-hidden="true">
+        <span className="search-shell__icon" aria-hidden="true">
           <SearchIcon size={isHero ? 22 : 18} />
         </span>
         <input
@@ -64,7 +64,7 @@ export function SearchBar({
           disabled={disabled}
           className={
             isHero
-              ? 'search-shell__input min-h-[3.65rem] text-[1.05rem] sm:min-h-[4.15rem] sm:text-[1.28rem]'
+              ? 'search-shell__input min-h-[3.75rem] text-[1.05rem] sm:min-h-[4.25rem] sm:text-[1.28rem]'
               : 'search-shell__input min-h-11 text-base'
           }
         />
@@ -72,7 +72,7 @@ export function SearchBar({
           type="submit"
           className={
             isHero
-              ? 'search-submit focus-ring m-1.5 min-h-12 shrink-0 rounded-full px-5 text-base font-semibold sm:min-h-[3.15rem] sm:px-7'
+              ? 'search-submit focus-ring m-1.5 min-h-12 shrink-0 rounded-full px-5 text-base font-semibold sm:min-h-[3.25rem] sm:px-7'
               : 'search-submit focus-ring m-1 min-h-9 shrink-0 rounded-full px-4 text-sm font-semibold'
           }
           disabled={disabled || searching}
@@ -86,8 +86,8 @@ export function SearchBar({
           type="button"
           className={
             isHero
-              ? 'focus-ring inline-flex items-center gap-2 rounded-full px-3 py-2 text-base font-medium text-focus hover:bg-cream/70 hover:text-rise-deep'
-              : 'focus-ring inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1.5 text-sm font-medium text-focus hover:text-rise-deep'
+              ? 'focus-ring inline-flex items-center gap-2 rounded-full px-3 py-2 text-[0.95rem] font-medium text-ink-faint hover:bg-cream/70 hover:text-aqua-deep'
+              : 'focus-ring inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1.5 text-sm font-medium text-ink-faint hover:text-aqua-deep'
           }
           onClick={() => void onUseLocation()}
           disabled={disabled || locating}

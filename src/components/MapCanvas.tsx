@@ -4,12 +4,11 @@ import { setWorkerUrl } from 'maplibre-gl'
 import type { Map as MapLibreMap, Marker } from 'maplibre-gl'
 import type { Feature, Polygon, MultiPolygon } from 'geojson'
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
-import { CONUS_BOUNDS, pinKind, type Coord, type RankedLocation } from '../types'
+import { CONUS_BOUNDS, type Coord, type RankedLocation } from '../types'
 import { prefersReducedMotion } from '../geo/distance'
 import { addStateLayers, applyPaperTheme, boundsFromPositions } from '../geo/mapStyle'
 
 setWorkerUrl(workerUrl.endsWith('.mjs') ? workerUrl : `${workerUrl}#.mjs`)
-
 
 export type MapFocus =
   | { type: 'us' }
@@ -21,6 +20,7 @@ type MapCanvasProps = {
   origin: Coord | null
   selectedId: string | null
   hoveredId: string | null
+  nearestId?: string | null
   focus: MapFocus
   onSelect: (id: string) => void
   onHover: (id: string | null) => void
@@ -31,6 +31,7 @@ export function MapCanvas({
   origin,
   selectedId,
   hoveredId,
+  nearestId = null,
   focus,
   onSelect,
   onHover,
@@ -140,9 +141,14 @@ export function MapCanvas({
         marker.addTo(map)
         markersRef.current.set(place.id, marker)
       }
-      syncPinState(marker.getElement(), place.id === selectedId, place.id === hoveredId)
+      syncPinState(
+        marker.getElement(),
+        place.id === selectedId,
+        place.id === hoveredId,
+        place.id === nearestId,
+      )
     }
-  }, [locations, selectedId, hoveredId])
+  }, [locations, selectedId, hoveredId, nearestId])
 
   useEffect(() => {
     const map = mapRef.current
@@ -192,18 +198,19 @@ export function MapCanvas({
 function pinElement(place: RankedLocation): HTMLButtonElement {
   const button = document.createElement('button')
   button.type = 'button'
-  button.className = `sw-pin sw-pin--${pinKind(place.category)}`
+  button.className = 'sw-pin'
   button.setAttribute('aria-label', place.name)
   button.innerHTML = `<svg class="sw-pin__glyph" viewBox="0 0 28 28" aria-hidden="true">
-    <path class="sw-pin__shape" d="M14 2.5c-5.2 0-9.4 4.1-9.4 9.2 0 6.6 9.4 14 9.4 14s9.4-7.4 9.4-14c0-5.1-4.2-9.2-9.4-9.2z"/>
-    <circle class="sw-pin__dot" cx="14" cy="11.2" r="3.15"/>
+    <path class="sw-pin__body" d="M14 2.5c-5.2 0-9.4 4.1-9.4 9.2 0 6.6 9.4 14 9.4 14s9.4-7.4 9.4-14c0-5.1-4.2-9.2-9.4-9.2z"/>
+    <circle class="sw-pin__core" cx="14" cy="11.2" r="3.15"/>
   </svg>`
   return button
 }
 
-function syncPinState(el: HTMLElement, active: boolean, hover: boolean): void {
+function syncPinState(el: HTMLElement, active: boolean, hover: boolean, nearest: boolean): void {
   el.classList.toggle('is-active', active)
   el.classList.toggle('is-hover', hover && !active)
+  el.classList.toggle('is-nearest', nearest)
 }
 
 function boundsOfGeometry(

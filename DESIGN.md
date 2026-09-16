@@ -1,31 +1,28 @@
 # Design notes — Try Shiftwave finder
 
-Listening surface (Stethoscope / Wave), not Shiftwave marketing chrome. Mood: a calm performance dashboard — intentional color, generous air, one job at a time.
+Calm locator, not a dashboard. People arrive with one question — *where can I try this near me?* — so the interaction follows Google / Apple Maps: one search field, progressive disclosure, results that feel inevitable. Surfaces stay high-luminance. Fraunces (display) + Source Sans 3 (body) are the product faces; do not switch to Manrope. Shiftwave marketing orange `#E43A00` and purple `#3911AC` are not product chrome.
 
-## Why these colors
+## Color science
 
-Warm neutrals and cool greens are not decoration. They encode arousal and action:
+Tokens live in `src/index.css` (`@theme`) and `src/theme/tokens.ts`. Hex values must match.
 
-| Token | Hex | Why |
-| --- | --- | --- |
-| Paper / cream | `#f4efe6` / `#fbf8f2` | Warm, low-arousal grounds. Calmer than pure white (less glare, less visual stress). Fits a nervous-system brand. |
-| Sand / line | `#efe7d9` / `#ddd4c6` | Hairline structure without grey chrome. |
-| Ink (not black) | `#1f1c18` | Readable hierarchy without the harshness of `#000` on white. Soft/faint inks (`#5a534b`, `#675f57`) recede. |
-| Sky → sage | `#b7d3e3` → `#9fbe99` | Cool-to-green restfulness. Approachable “near you” signal (water + vegetation) without neon. Washes behind search and on the map. |
-| Rise-deep | `#3d6d62` | **One** primary action (Search). High contrast on cream; “go” without generic blue. |
-| Focus | `#3e6574` | Search focus ring and origin mark. Locative, science-adjacent teal — Google-familiar, warmer. |
-| Soft coral | `#e4a894` | Sparse human warmth (gym pins, tiny marks). Warm hues raise arousal — never a surface or a competing CTA. |
-| Mist / slate / lavender | `#c8d8d2` / `#7a8496` / `#b8a7c8` | Supporting map/category notes only. |
-| Fall-deep | `#5c5370` | Status/errors. Muted, not alarm-red, not marketing purple. |
+**Aqua `#0fa3a8` → violet `#6f5fe8`.** Cool spectrum associated with calm and focused attention (shorter wavelengths, lower arousal than warm reds). This is the *primary* accent: hero wash, focus rings, active radius chips, selected list row, selected map pin. Soft tints `#e3f5f5` / `#ebe8fb` are the same hues at high luminance — washes, not fills. Deep aqua `#0b7f8d` is the focus / search-button value (AA on white).
 
-Do **not** use black dashboards, orange `#E43A00`, purple `#3911AC`, Montserrat/Inter-only, dense chrome, harsh shadows, or white-on-black SHIFTWAVE hero.
+**Coral `#e5563d` → orange `#f39a5b`.** Warm hues capture attention first (preattentive pop against a cool field). Use for *one* highlight at a time: the nearest-result mark, the search-origin pin, and a hover glow on the primary CTA. Never as body text or large surfaces.
+
+**Paper `#f6f5f2` / `#f3f2ee` / white.** High-luminance ground raises contrast for ink and keeps the board “open” (same warmth as Gordon’s growth board, without cloning its layout or Manrope). Hairline `#e4e2dc` instead of drop-shadow stacks.
+
+**Ink `#171a21` / `#4a5060` / `#7a8090`.** Three-step type hierarchy. Body and titles meet WCAG AA on paper.
+
+**Positive green `#0f8a3c` / `#e4f5ea`.** Reserved for a true success / “open now” state. Do not invent hours to use it.
+
+## Gradients
+
+Hero wash and selected/active accents only — aqua into violet, low opacity. No rainbow chrome on cards, pins, or the map.
 
 ## UX pattern (Google “find near me”)
 
-1. Landing is one field: huge centered search, minimal chrome, no map until search or geolocation.
-2. Familiar controls: single field, primary Search, secondary “Use my location,” distance on the right of rows.
-3. After search: compact sticky search header + list + map. Progressive disclosure.
-4. One accent for the CTA (rise-deep). Sky/sage for map and proximity. Coral only as marks.
-5. Soft 24px cards, hairline borders, restrained motion (`prefers-reduced-motion` honored).
-
-Type: **Fraunces** for display, **Source Sans 3** for body. Tokens live in `src/index.css`.
+1. Landing is one field: huge centered search, generous empty space, subtle aqua→violet wash, no map until search or geolocation.
+2. Familiar controls: single pill, primary Search, quiet “Use my location,” name left / distance right.
+3. After search: compact sticky search header + list + map. Selected row and pin share the aqua/violet accent.
+4. Soft 24px cards, hairline borders, restrained motion (`prefers-reduced-motion` honored).

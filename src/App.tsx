@@ -259,13 +259,9 @@ export function App() {
 function LiveListBanner() {
   return (
     <div className="live-banner">
-      <p className="mx-auto flex max-w-[1180px] items-start gap-3 px-5 py-2.5 text-sm text-ink-soft md:px-8">
-        <span className="mt-1 inline-block h-2 w-2 shrink-0 rounded-full bg-rise-deep" />
-        <span>
-          <strong className="font-semibold text-ink">Live partner list.</strong> Qualified public
-          try-spots from the partner sheet. Hours may require a call. Some pins are city-level until
-          a street address is added.
-        </span>
+      <p className="mx-auto max-w-[1180px] px-5 py-2.5 md:px-8">
+        <strong>Live partner list.</strong> Qualified public try-spots from the partner sheet.
+        Hours may require a call. Some pins are city-level until a street address is added.
       </p>
     </div>
   )
@@ -295,17 +291,17 @@ function LandingView({
   loadFailed,
 }: LandingViewProps) {
   return (
-    <div className="hero-wash flex min-h-[calc(100dvh-3.25rem)] flex-col">
-      <main className="mx-auto flex w-full max-w-[46rem] flex-1 flex-col items-center justify-center px-5 py-14 text-center sm:py-20 md:py-24">
-        <WaveMark className="h-7 w-16 text-rise-deep" title="Shiftwave line-wave mark" />
-        <h1 className="mt-7 font-display text-[2.2rem] leading-[1.08] font-medium tracking-tight text-ink sm:text-5xl md:text-[3.35rem]">
+    <div className="hero-wash flex min-h-[calc(100dvh-2.75rem)] flex-col">
+      <main className="mx-auto flex w-full max-w-[46rem] flex-1 flex-col items-center justify-center px-5 py-20 text-center sm:py-24 md:py-28">
+        <WaveMark className="h-7 w-16 text-aqua" title="Shiftwave line-wave mark" />
+        <h1 className="mt-7 font-display text-[2.5rem] leading-[1.06] font-medium tracking-tight text-ink sm:text-5xl md:text-[3.4rem]">
           Where Can I <em className="font-medium italic">Try</em> Shiftwave?
         </h1>
-        <p className="mt-4 max-w-md text-[1.05rem] leading-relaxed text-ink-soft sm:max-w-lg sm:text-lg">
+        <p className="mt-5 max-w-lg text-lg leading-relaxed text-ink-soft">
           Find a public try-spot near you — full-body pulsed pressure and guided breathwork.
         </p>
 
-        <div className="search-aura mt-11 w-full sm:mt-12">
+        <div className="search-aura mt-12 w-full">
           <SearchBar
             variant="hero"
             query={query}
@@ -318,7 +314,7 @@ function LandingView({
         </div>
 
         {(error || geoNote || loadFailed) && (
-          <p className="mt-5 max-w-md text-sm text-fall-deep" role="status">
+          <p className="mt-5 max-w-md text-sm text-ink-soft" role="status">
             {error ||
               geoNote ||
               'Locations didn’t load. Check that locations.json is present, or that VITE_LOCATIONS_URL points at the live sheet export.'}
@@ -395,7 +391,7 @@ function ResultsView({
           <div className="flex items-center justify-between gap-3">
             <button
               type="button"
-              className="focus-ring flex min-w-0 items-center gap-2.5 rounded-full text-left text-rise-deep"
+              className="focus-ring flex min-w-0 items-center gap-2.5 rounded-full text-left text-aqua"
               onClick={onReset}
             >
               <WaveMark className="h-5 w-12 shrink-0" title="Shiftwave line-wave mark" />
@@ -405,7 +401,7 @@ function ResultsView({
             </button>
             <button
               type="button"
-              className="focus-ring shrink-0 rounded-full border border-line bg-cream px-3 py-1.5 text-sm text-ink-soft hover:bg-sand"
+              className="focus-ring shrink-0 rounded-full border border-line bg-cream px-3 py-1.5 text-sm text-ink-soft hover:bg-paper-deep"
               onClick={onReset}
             >
               New search
@@ -446,7 +442,7 @@ function ResultsView({
           </div>
 
           {(error || geoNote) && (
-            <p className="mb-4 text-sm text-fall-deep" role="status">
+            <p className="mb-4 text-sm text-ink-soft" role="status">
               {error || geoNote}
             </p>
           )}
@@ -474,16 +470,15 @@ function ResultsView({
             />
           )}
 
-          {emptyNearby && (
-            <p className="mb-2 text-sm font-medium text-ink-faint">Closest try-spots</p>
-          )}
+          {emptyNearby && <p className="mb-2 text-sm font-medium text-ink-faint">Closest try-spots</p>}
 
           <ul className="place-list place-panel">
-            {list.map((place) => (
+            {list.map((place, index) => (
               <li key={place.id}>
                 <LocationCard
                   place={place}
                   active={place.id === selectedId}
+                  nearest={index === 0}
                   onSelect={() => onSelect(place.id)}
                   onHover={onHover}
                 />
@@ -498,6 +493,7 @@ function ResultsView({
             origin={origin}
             selectedId={selectedId}
             hoveredId={hoveredId}
+            nearestId={list[0]?.id ?? null}
             focus={focus}
             onSelect={onSelectPin}
             onHover={onHover}
