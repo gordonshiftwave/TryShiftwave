@@ -202,7 +202,7 @@ export default function App() {
     heading =
       radius === 'any'
         ? `${visible.length} ${visible.length === 1 ? 'place' : 'places'}, nearest first`
-        : `${visible.length} ${visible.length === 1 ? 'place' : 'places'} within ${radiusLabel} of ${origin.label}`
+        : `${visible.length} ${visible.length === 1 ? 'place' : 'places'} near ${origin.label}`
     subheading = 'Tap a card or a pin — the list and map stay in sync.'
     emptyTitle = `No try-spots within ${radiusLabel} of ${origin.label}`
     emptyBody =
