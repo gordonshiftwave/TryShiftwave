@@ -1,26 +1,21 @@
+import { publicFile } from '../publicFile'
+
 type WaveMarkProps = {
   className?: string
   title?: string
 }
 
-export function WaveMark({ className = 'h-7 w-14', title }: WaveMarkProps) {
+/** Official Shiftwave square mark (header CDN logo) — dark field, light wave. */
+export function WaveMark({ className = 'h-10 w-10', title }: WaveMarkProps) {
   return (
-    <svg
+    <img
+      src={publicFile('logo.png')}
+      alt={title ?? ''}
+      width={512}
+      height={512}
+      draggable={false}
       className={className}
-      viewBox="0 0 72 28"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      role={title ? 'img' : 'presentation'}
-      aria-hidden={title ? undefined : true}
-      aria-label={title}
-    >
-      <path
-        d="M4 16c7.5-11 13-11 20 0s13 11 20 0 13-11 20 0"
-        stroke="currentColor"
-        strokeWidth="2.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+      role={title ? undefined : 'presentation'}
+    />
   )
 }
