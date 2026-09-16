@@ -327,7 +327,7 @@ export function App() {
           </ul>
         </section>
 
-        <section className="order-1 h-[38vh] min-h-[280px] md:sticky md:top-5 md:order-2 md:h-[calc(100vh-1.5rem)] md:min-h-[540px]">
+        <section className="order-1 h-[42vh] min-h-[280px] md:sticky md:top-5 md:order-2 md:aspect-[5/4] md:h-auto md:min-h-[480px] md:max-h-[calc(100vh-5.5rem)]">
           <MapCanvas
             locations={ranked}
             origin={origin}
