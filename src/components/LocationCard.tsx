@@ -1,5 +1,5 @@
 import { categoryLabel, pinKind, type LocationCategory, type RankedLocation } from '../types'
-import { formatAddress, mapsUrl } from '../data/parse'
+import { formatAddress, hoursAreUnavailable, mapsUrl, telHref } from '../data/parse'
 import { formatMiles } from '../geo/distance'
 
 const PIN_COLOR: Record<LocationCategory, string> = {
@@ -79,7 +79,9 @@ export function LocationCard({ place, active, onSelect, onHover }: LocationCardP
         {place.hours && (
           <div>
             <dt className="sr-only">Hours</dt>
-            <dd>{place.hours}</dd>
+            <dd className={hoursAreUnavailable(place.hours) ? 'text-ink-faint' : undefined}>
+              {place.hours}
+            </dd>
           </div>
         )}
         {(place.phone || place.email) && (
@@ -88,7 +90,7 @@ export function LocationCard({ place, active, onSelect, onHover }: LocationCardP
               <dd>
                 <a
                   className="focus-ring rounded-sm hover:text-energy"
-                  href={`tel:${place.phone.replace(/[^\d+]/g, '')}`}
+                  href={telHref(place.phone)}
                   onClick={(event) => event.stopPropagation()}
                 >
                   {place.phone}
