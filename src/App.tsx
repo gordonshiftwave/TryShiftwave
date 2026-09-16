@@ -293,7 +293,7 @@ function LandingView({
   return (
     <div className="hero-wash flex min-h-[calc(100dvh-2.75rem)] flex-col">
       <main className="mx-auto flex w-full max-w-[46rem] flex-1 flex-col items-center justify-center px-5 py-20 text-center sm:py-24 md:py-28">
-        <WaveMark className="h-7 w-16 text-peach-warm" title="Shiftwave line-wave mark" />
+        <WaveMark className="h-7 w-16 text-energy" title="Shiftwave line-wave mark" />
         <h1 className="mt-7 font-display text-[2.5rem] font-semibold leading-[1.3] tracking-normal text-ink sm:text-5xl md:text-[3.4rem]">
           Where Can I <em className="font-semibold italic">Try</em> Shiftwave?
         </h1>
@@ -391,7 +391,7 @@ function ResultsView({
           <div className="flex items-center justify-between gap-3">
             <button
               type="button"
-              className="focus-ring flex min-w-0 items-center gap-2.5 rounded-full text-left text-peach-warm"
+              className="focus-ring flex min-w-0 items-center gap-2.5 rounded-full text-left text-energy"
               onClick={onReset}
             >
               <WaveMark className="h-5 w-12 shrink-0" title="Shiftwave line-wave mark" />

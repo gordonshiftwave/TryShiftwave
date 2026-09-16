@@ -1,7 +1,7 @@
 import type { LngLatBoundsLike, Map as MapLibreMap } from 'maplibre-gl'
 import { tokens } from '../theme/tokens'
 
-/** Recolor OpenFreeMap Positron to a quiet paper basemap so peach-warm pins pop. */
+/** Recolor OpenFreeMap Positron to a quiet paper basemap so Energy/Calm pins pop. */
 export function applyPaperTheme(map: MapLibreMap): void {
   const set = (layer: string, prop: string, value: unknown) => {
     if (!map.getLayer(layer)) return
@@ -91,8 +91,8 @@ export function addStateLayers(map: MapLibreMap): void {
       source: 'us-states',
       maxzoom: 5.8,
       paint: {
-        'fill-color': tokens.peachWarm,
-        'fill-opacity': 0.08,
+        'fill-color': tokens.energy,
+        'fill-opacity': 0.05,
       },
     },
     before,
@@ -105,7 +105,7 @@ export function addStateLayers(map: MapLibreMap): void {
       source: 'us-states',
       maxzoom: 6.2,
       paint: {
-        'line-color': tokens.peachDeep,
+        'line-color': tokens.calm,
         'line-width': 0.7,
         'line-opacity': 0.28,
       },
@@ -120,7 +120,7 @@ export function addStateLayers(map: MapLibreMap): void {
       source: 'us-states',
       maxzoom: 5.8,
       paint: {
-        'fill-color': tokens.peachWarm,
+        'fill-color': tokens.calm,
         'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.14, 0],
       },
     },

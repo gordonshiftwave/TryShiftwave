@@ -57,7 +57,7 @@ export function LocationCard({ place, active, nearest = false, onSelect, onHover
             <dt className="sr-only">Address</dt>
             <dd>
               <a
-                className="focus-ring rounded-sm underline decoration-line underline-offset-4 hover:text-peach-deep"
+                className="focus-ring rounded-sm underline decoration-line underline-offset-4 hover:text-energy"
                 href={mapsUrl(place)}
                 target="_blank"
                 rel="noreferrer"
@@ -79,7 +79,7 @@ export function LocationCard({ place, active, nearest = false, onSelect, onHover
             {place.phone && (
               <dd>
                 <a
-                  className="focus-ring rounded-sm hover:text-peach-deep"
+                  className="focus-ring rounded-sm hover:text-energy"
                   href={`tel:${place.phone.replace(/[^\d+]/g, '')}`}
                   onClick={(event) => event.stopPropagation()}
                 >
@@ -90,7 +90,7 @@ export function LocationCard({ place, active, nearest = false, onSelect, onHover
             {place.email && (
               <dd>
                 <a
-                  className="focus-ring rounded-sm hover:text-peach-deep"
+                  className="focus-ring rounded-sm hover:text-energy"
                   href={`mailto:${place.email}`}
                   onClick={(event) => event.stopPropagation()}
                 >

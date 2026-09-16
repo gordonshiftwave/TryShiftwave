@@ -86,8 +86,8 @@ export function SearchBar({
           type="button"
           className={
             isHero
-              ? 'focus-ring inline-flex items-center gap-2 rounded-full px-3 py-2 text-[0.95rem] font-medium text-ink-faint hover:bg-cream/70 hover:text-peach-deep'
-              : 'focus-ring inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1.5 text-sm font-medium text-ink-faint hover:text-peach-deep'
+              ? 'focus-ring inline-flex items-center gap-2 rounded-full px-3 py-2 text-[0.95rem] font-medium text-ink-faint hover:bg-cream/70 hover:text-energy'
+              : 'focus-ring inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1.5 text-sm font-medium text-ink-faint hover:text-energy'
           }
           onClick={() => void onUseLocation()}
           disabled={disabled || locating}

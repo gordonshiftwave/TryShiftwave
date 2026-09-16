@@ -2,11 +2,11 @@
 @import 'maplibre-gl/dist/maplibre-gl.css';
 
 /*
-  Matches shiftwave.co for merge (see DESIGN.md + src/theme/tokens.ts):
-  - Montserrat 500 body / 600 headings. No second display serif.
+  Find Near You = shiftwave.co + Brand Guide 2025 (see DESIGN.md).
+  - Montserrat 500 body / 600 headings. No Fraunces / Source Sans 3.
   - Paper / white ground, ink #3C3B3B, peach highlight washes.
-  - Black Search CTA. Keyboard focus #0B61CD.
-  - Map pins: peach-warm #E0A580 (pops on a light map; stays in site neutrals).
+  - Black Search CTA (site primary). Keyboard focus #0B61CD.
+  - Accents, sparingly: Energy orange #E43A00 (pins, nearest), Calm purple #3911AC (selected).
 */
 @theme {
   --color-paper: #f7f5f2;
@@ -22,6 +22,10 @@
   --color-peach-warm: #e0a580;
   --color-peach-deep: #c4845e;
   --color-peach-tint: #fff6ee;
+  --color-energy: #e43a00;
+  --color-energy-tint: #fdece6;
+  --color-calm: #3911ac;
+  --color-calm-tint: #ede8f8;
   --color-positive: #0f8a3c;
   --color-positive-tint: #e4f5ea;
   --color-focus: #0b61cd;
@@ -249,9 +253,9 @@ textarea {
 }
 
 .paper-card[data-active='true'] {
-  border-color: color-mix(in srgb, var(--color-peach-warm) 40%, var(--color-line));
+  border-color: color-mix(in srgb, var(--color-calm) 35%, var(--color-line));
   box-shadow:
-    0 0 0 3px color-mix(in srgb, var(--color-peach) 70%, transparent),
+    0 0 0 3px color-mix(in srgb, var(--color-calm-tint) 80%, transparent),
     0 1px 2px rgb(60 59 59 / 0.03);
 }
 
@@ -285,8 +289,8 @@ textarea {
 }
 
 .place-row[data-active='true'] {
-  background: color-mix(in srgb, var(--color-peach) 42%, white);
-  box-shadow: inset 3px 0 0 var(--color-peach-warm);
+  background: color-mix(in srgb, var(--color-calm-tint) 70%, white);
+  box-shadow: inset 3px 0 0 var(--color-calm);
 }
 
 .distance-chip {
@@ -306,8 +310,8 @@ textarea {
 }
 
 .place-row[data-active='true'] .distance-chip {
-  background: color-mix(in srgb, var(--color-peach) 55%, white);
-  color: var(--color-ink);
+  background: color-mix(in srgb, var(--color-calm-tint) 80%, white);
+  color: var(--color-calm);
 }
 
 .radius-chip {
@@ -342,8 +346,8 @@ textarea {
   align-items: center;
   gap: 0.28rem;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--color-peach) 55%, white);
-  color: var(--color-peach-deep);
+  background: var(--color-energy-tint);
+  color: var(--color-energy);
   padding: 0.12rem 0.5rem;
   font-size: 0.68rem;
   font-weight: 600;
@@ -394,8 +398,8 @@ textarea {
 }
 
 .sw-pin__body {
-  fill: var(--color-peach-warm);
-  stroke: var(--color-peach-deep);
+  fill: var(--color-energy);
+  stroke: color-mix(in srgb, var(--color-energy) 70%, var(--color-ink));
   stroke-width: 1.6;
 }
 
@@ -406,12 +410,12 @@ textarea {
 .sw-pin.is-active {
   z-index: 5;
   transform: translateY(-8px) scale(1.28);
-  filter: drop-shadow(0 5px 8px rgb(60 59 59 / 0.22));
+  filter: drop-shadow(0 5px 8px rgb(57 17 172 / 0.28));
 }
 
 .sw-pin.is-active .sw-pin__body {
-  fill: var(--color-ink);
-  stroke: var(--color-cta);
+  fill: var(--color-calm);
+  stroke: color-mix(in srgb, var(--color-calm) 70%, var(--color-ink));
 }
 
 .sw-pin.is-hover:not(.is-active) {
@@ -427,7 +431,7 @@ textarea {
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background: var(--color-peach);
+  background: var(--color-energy);
   border: 1.5px solid var(--color-cream);
   transform: translateX(-50%);
   pointer-events: none;
