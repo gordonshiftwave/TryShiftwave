@@ -398,7 +398,7 @@ function ResultsView({
               onClick={onReset}
             >
               <WaveMark className="h-5 w-12 shrink-0" title="Shiftwave line-wave mark" />
-              <span className="truncate font-display text-lg font-medium tracking-tight text-ink sm:text-xl">
+              <span className="font-display text-base leading-snug font-medium tracking-tight text-ink sm:text-xl">
                 Where Can I <em className="font-medium italic">Try</em> Shiftwave?
               </span>
             </button>
@@ -424,14 +424,12 @@ function ResultsView({
 
       <main className="reveal mx-auto grid max-w-[1180px] gap-6 px-5 py-6 md:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] md:items-start md:px-8 md:py-8 lg:gap-8">
         <section id="results" className="order-2 md:order-1">
-          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="mb-5">
             <h2 className="font-display text-[1.65rem] leading-tight font-medium text-ink">
               {resultLabel}
             </h2>
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="mr-1 text-xs font-medium tracking-wide text-ink-faint uppercase">
-                Within
-              </span>
+            <div className="mt-3 flex flex-wrap items-center gap-1.5">
+              <span className="mr-1 text-sm text-ink-faint">Within</span>
               {NEARBY_RADIUS_OPTIONS.map((miles) => (
                 <button
                   key={miles}
