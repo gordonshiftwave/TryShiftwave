@@ -146,7 +146,7 @@ export default function App() {
         </div>
         <Suspense
           fallback={
-            <div className="surface-card h-[42vh] min-h-[280px] lg:sticky lg:top-6 lg:h-[calc(100svh-3rem)] lg:min-h-[560px] order-1 lg:order-2 bg-sand/40" />
+            <div className="surface-card h-[42vh] min-h-[280px] lg:sticky lg:top-6 lg:h-[560px] lg:min-h-[560px] order-1 lg:order-2 bg-sand/40" />
           }
         >
           <LocationMap
