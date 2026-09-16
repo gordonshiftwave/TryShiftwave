@@ -1,10 +1,14 @@
 import { useEffect, useRef } from 'react'
 import * as maplibregl from 'maplibre-gl'
+import { setWorkerUrl } from 'maplibre-gl'
 import type { Map as MapLibreMap, Marker } from 'maplibre-gl'
 import type { Feature, Polygon, MultiPolygon } from 'geojson'
-import { US_CENTER, US_ZOOM, type Coord, type RankedLocation } from '../types'
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
+import { CONUS_BOUNDS, type Coord, type RankedLocation } from '../types'
 import { prefersReducedMotion } from '../geo/distance'
 import { addStateLayers, applyPaperTheme, boundsFromPositions } from '../geo/mapStyle'
+
+setWorkerUrl(workerUrl.endsWith('.mjs') ? workerUrl : `${workerUrl}#.mjs`)
 
 const PIN_FILL: Record<RankedLocation['category'], string> = {
   clinic: '#b7d3e3',
@@ -53,8 +57,8 @@ export function MapCanvas({
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: 'https://tiles.openfreemap.org/styles/positron',
-      center: [US_CENTER.lng, US_CENTER.lat],
-      zoom: US_ZOOM,
+      bounds: CONUS_BOUNDS,
+      fitBoundsOptions: { padding: 28 },
       attributionControl: { compact: true },
       cooperativeGestures: true,
     })
@@ -165,7 +169,7 @@ export function MapCanvas({
     if (!map) return
     const duration = prefersReducedMotion() ? 0 : 1100
     if (focus.type === 'us') {
-      map.easeTo({ center: [US_CENTER.lng, US_CENTER.lat], zoom: US_ZOOM, duration })
+      map.fitBounds(CONUS_BOUNDS, { padding: 28, duration })
       return
     }
     if (focus.type === 'pin') {
@@ -196,8 +200,8 @@ function pinElement(place: RankedLocation): HTMLButtonElement {
   button.setAttribute('aria-label', place.name)
   const fill = PIN_FILL[place.category]
   button.innerHTML = `<svg class="sw-pin__glyph" viewBox="0 0 28 28" aria-hidden="true">
-    <path d="M14 2.5c-5.2 0-9.4 4.1-9.4 9.2 0 6.6 9.4 14 9.4 14s9.4-7.4 9.4-14c0-5.1-4.2-9.2-9.4-9.2z" fill="${fill}" stroke="#1f1c18" stroke-opacity="0.18" stroke-width="1"/>
-    <circle cx="14" cy="11.2" r="3.1" fill="#fbf8f2"/>
+    <path d="M14 2.5c-5.2 0-9.4 4.1-9.4 9.2 0 6.6 9.4 14 9.4 14s9.4-7.4 9.4-14c0-5.1-4.2-9.2-9.4-9.2z" fill="${fill}" stroke="#3d6d62" stroke-width="1.6"/>
+    <circle cx="14" cy="11.2" r="3.15" fill="#fbf8f2"/>
   </svg>`
   return button
 }
