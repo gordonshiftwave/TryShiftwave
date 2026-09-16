@@ -2,6 +2,14 @@
 
 Public map for finding a nearby place to **try Shiftwave** — full-body pulsed pressure and guided breathwork. This is a standalone web app (search + map) meant to ship before it is embedded on shiftwave.co.
 
+## Live site
+
+**https://gordonshiftwave.github.io/TryShiftwave/**
+
+Pushes to `main` run `.github/workflows/deploy-pages.yml` (`npm ci`, `npm run build`, deploy `dist/` via GitHub Pages). Vite `base` is `/TryShiftwave/` for this project site. A custom domain or `username.github.io` user site would need `base: '/'` in `vite.config.ts`.
+
+If that URL 404s after the first successful Actions run, Gordon needs one click: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+
 [`public/locations.json`](public/locations.json) is a **static snapshot** of qualified partners from Dani’s *Shiftwave Clinic & Commercial List* (rows where “Can we send people there to Demo?” = YES). No Shopify, no Google write access, and no secrets. To refresh, export the sheet and replace that file (or point `VITE_LOCATIONS_URL` at a CORS-enabled JSON/CSV feed).
 
 > Live partner list. Only **qualified** public try-spots appear on the map (public-facing, demo consent, walk-in appropriate). The sheet has no street-address column and no hours column — pins are city/ZIP, and hours are “Call for hours.” Ambassadors, pop-ups, booking, and heat maps are out of scope here.
@@ -22,7 +30,7 @@ npm run build
 npm run preview
 ```
 
-`npm run build` writes a static site to `dist/` (Vite + React + TypeScript). Host the folder on any static host. No Mapbox/Google Maps API key is required: the map uses [MapLibre GL](https://maplibre.org/) with [OpenFreeMap](https://openfreemap.org/) vector tiles.
+`npm run build` writes a static site to `dist/` (Vite + React + TypeScript) with `base` `/TryShiftwave/` so GitHub Pages asset URLs resolve. `npm run preview` serves that build at [http://localhost:4173/TryShiftwave/](http://localhost:4173/TryShiftwave/). No Mapbox/Google Maps API key is required: the map uses [MapLibre GL](https://maplibre.org/) with [OpenFreeMap](https://openfreemap.org/) vector tiles. MapLibre’s worker and `public/` files (`locations.json`, `us-states.json`, favicon) are resolved under that base path.
 
 Geocoding uses Zippopotam.us (US ZIP codes) with OpenStreetMap Nominatim / Photon as fallback. Please keep OSM attribution visible (MapLibre adds it).
 

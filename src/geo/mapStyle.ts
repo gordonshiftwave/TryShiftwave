@@ -1,4 +1,5 @@
 import type { LngLatBoundsLike, Map as MapLibreMap } from 'maplibre-gl'
+import { publicFile } from '../publicFile'
 import { tokens } from '../theme/tokens'
 
 /** Recolor OpenFreeMap Positron to quiet paper so Energy pins pop. */
@@ -77,7 +78,7 @@ export function addStateLayers(map: MapLibreMap): void {
 
   map.addSource('us-states', {
     type: 'geojson',
-    data: '/us-states.json',
+    data: publicFile('us-states.json'),
     generateId: true,
   })
 

@@ -8,7 +8,11 @@ import { CONUS_BOUNDS, pinKind, type Coord, type RankedLocation } from '../types
 import { prefersReducedMotion } from '../geo/distance'
 import { addStateLayers, applyPaperTheme, boundsFromPositions } from '../geo/mapStyle'
 
-setWorkerUrl(workerUrl.endsWith('.mjs') ? workerUrl : `${workerUrl}#.mjs`)
+// Vite includes `base` (`/TryShiftwave/` on GitHub Pages) in this worker URL.
+const resolvedWorker = workerUrl.startsWith('/') || /^[a-z]+:/i.test(workerUrl)
+  ? workerUrl
+  : `${import.meta.env.BASE_URL}${workerUrl.replace(/^\.\//, '')}`
+setWorkerUrl(resolvedWorker.endsWith('.mjs') ? resolvedWorker : `${resolvedWorker}#.mjs`)
 
 
 export type MapFocus =

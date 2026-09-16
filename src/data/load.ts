@@ -1,7 +1,6 @@
 import type { LocationRecord } from '../types'
+import { publicFile } from '../publicFile'
 import { isPublicQualified, parseCsv, parseRow } from './parse'
-
-const DEFAULT_URL = '/locations.json'
 
 /**
  * Load public-qualified try-spots.
@@ -11,7 +10,7 @@ const DEFAULT_URL = '/locations.json'
  * without a code change. Only rows that pass the qualification gate are returned.
  */
 export async function loadLocations(): Promise<LocationRecord[]> {
-  const url = import.meta.env.VITE_LOCATIONS_URL?.trim() || DEFAULT_URL
+  const url = resolveLocationsUrl()
   const res = await fetch(url, { cache: 'no-cache' })
   if (!res.ok) {
     throw new Error(`Could not load locations (${res.status})`)
@@ -51,4 +50,11 @@ function extractJsonRows(payload: unknown): Record<string, unknown>[] {
     }
   }
   throw new Error('Locations JSON must be an array or { locations: [...] }')
+}
+
+function resolveLocationsUrl(): string {
+  const configured = import.meta.env.VITE_LOCATIONS_URL?.trim()
+  if (!configured) return publicFile('locations.json')
+  if (/^[a-z][a-z0-9+.-]*:/i.test(configured)) return configured
+  return publicFile(configured)
 }
