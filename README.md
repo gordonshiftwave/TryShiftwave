@@ -28,12 +28,13 @@ Geocoding uses Zippopotam.us (US ZIP codes) with OpenStreetMap Nominatim / Photo
 
 ## Product behavior
 
-- Search by US **ZIP**, **city**, or **address**
+- One job on load: a centered ZIP / city / address search (Google “find a place near me,” not a dashboard)
+- Map and results appear **after** search or **Use my location**
 - **Use my location**, with a clear fallback if permission is denied or the page is not HTTPS
-- Interactive US map, pins synced to the list, state click-to-zoom at low zoom
+- Results as a simple list with distance; pins synced to the list; state click-to-zoom at national zoom
 - Each place: name, distance (mi), address (Google Maps link), hours, phone and/or email
 - Empty / no-nearby state shows the closest qualified examples
-- Mobile-first layout; `prefers-reduced-motion` disables fly/fit animation
+- Mobile-first layout; `prefers-reduced-motion` disables fly/fit animation and the results reveal
 
 Brand tokens follow Stethoscope Design (paper / cream / sand surfaces, Fraunces + Source Sans 3). Shiftwave marketing chrome (dark UI, orange `#E43A00`, purple `#3911AC`) is intentionally not used.
 

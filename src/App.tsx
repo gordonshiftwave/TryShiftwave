@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { EmptyState } from './components/EmptyState'
 import { LocationCard } from './components/LocationCard'
 import { MapCanvas, type MapFocus } from './components/MapCanvas'
+import { SearchBar } from './components/SearchBar'
 import { WaveMark } from './components/WaveMark'
 import { loadLocations } from './data/load'
 import { formatAddress } from './data/parse'
@@ -19,6 +20,8 @@ type Status = 'idle' | 'loading' | 'searching' | 'locating' | 'ready' | 'error'
 
 export function App() {
   const [places, setPlaces] = useState<LocationRecord[]>([])
+  const [placesReady, setPlacesReady] = useState(false)
+  const [loadFailed, setLoadFailed] = useState(false)
   const [status, setStatus] = useState<Status>('loading')
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -35,10 +38,13 @@ export function App() {
       .then((rows) => {
         if (cancelled) return
         setPlaces(rows)
-        setStatus('ready')
+        setPlacesReady(true)
+        setStatus((current) => (current === 'searching' || current === 'locating' ? current : 'ready'))
       })
       .catch((err: unknown) => {
         if (cancelled) return
+        setLoadFailed(true)
+        setPlacesReady(true)
         setError(err instanceof Error ? err.message : 'Could not load locations')
         setStatus('error')
       })
@@ -60,7 +66,7 @@ export function App() {
   }, [places, origin])
 
   const nearby = useMemo(() => {
-    if (!origin) return ranked
+    if (!origin) return []
     if (origin.kind === 'state' && origin.state) {
       const inState = ranked.filter((place) => matchesState(place, origin.state))
       if (inState.length) return inState
@@ -71,8 +77,33 @@ export function App() {
   }, [origin, ranked, radius])
 
   const closestFallback = ranked.slice(0, 3)
-  const list = origin ? nearby : groupStable(ranked)
-  const emptyNearby = Boolean(origin) && nearby.length === 0
+  const emptyNearby = Boolean(origin) && nearby.length === 0 && placesReady && places.length > 0
+  const list = emptyNearby ? closestFallback : nearby
+  const showingResults = origin !== null
+
+  useEffect(() => {
+    if (!origin) {
+      setFocus({ type: 'us' })
+      setSelectedId(null)
+      return
+    }
+    const scored = places
+      .map((place) => ({ place, distance: milesBetween(origin, place) }))
+      .sort((a, b) => a.distance - b.distance)
+    const matches =
+      origin.kind === 'state' && origin.state
+        ? scored.filter((row) => matchesState(row.place, origin.state))
+        : scored.filter((row) => row.distance <= radius)
+    const pool = matches.length ? matches : scored.slice(0, 3)
+    setFocus({
+      type: 'fit',
+      coords: [origin, ...pool.map((row) => row.place)],
+    })
+    setSelectedId((current) => {
+      if (current && pool.some((row) => row.place.id === current)) return current
+      return matches[0]?.place.id ?? pool[0]?.place.id ?? null
+    })
+  }, [origin, places, radius])
 
   useEffect(() => {
     if (!selectedId) return
@@ -82,6 +113,14 @@ export function App() {
       behavior: prefersReducedMotion() ? 'auto' : 'smooth',
     })
   }, [selectedId])
+
+  useEffect(() => {
+    if (!origin) return
+    window.scrollTo({
+      top: 0,
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+    })
+  }, [origin])
 
   async function runSearch(text: string) {
     const q = text.trim()
@@ -101,19 +140,6 @@ export function App() {
   function applyOrigin(result: GeocodeResult) {
     setOrigin(result)
     setQuery(result.label)
-    const scored = places
-      .map((place) => ({ place, distance: milesBetween(result, place) }))
-      .sort((a, b) => a.distance - b.distance)
-    const matches =
-      result.kind === 'state' && result.state
-        ? scored.filter((row) => matchesState(row.place, result.state))
-        : scored.filter((row) => row.distance <= radius)
-    const pool = matches.length ? matches : scored.slice(0, 3)
-    setFocus({
-      type: 'fit',
-      coords: [result, ...pool.map((row) => row.place)],
-    })
-    setSelectedId(matches[0]?.place.id ?? null)
   }
 
   async function useMyLocation() {
@@ -169,124 +195,268 @@ export function App() {
     ? emptyNearby
       ? `No try-spots within ${radius} miles of ${origin.label}`
       : `${nearby.length} try-spot${nearby.length === 1 ? '' : 's'} near ${origin.label}`
-    : `${places.length} qualified public try-spots`
+    : ''
 
   return (
     <div className="min-h-screen">
-      <a
-        href="#results"
-        className="focus-ring sr-only absolute left-4 top-4 z-50 rounded-full bg-cream px-3 py-2 text-sm text-ink focus:not-sr-only"
-      >
-        Skip to results
-      </a>
+      {showingResults && (
+        <a
+          href="#results"
+          className="focus-ring sr-only absolute left-4 top-4 z-50 rounded-full bg-cream px-3 py-2 text-sm text-ink focus:not-sr-only"
+        >
+          Skip to results
+        </a>
+      )}
 
-      <div className="border-b border-line bg-sand/80">
-        <p className="mx-auto flex max-w-[1180px] items-start gap-3 px-5 py-2.5 text-sm text-ink-soft md:px-8">
-          <span className="mt-1 inline-block h-2 w-2 shrink-0 rounded-full bg-coral" />
-          <span>
-            <strong className="font-semibold text-ink">Demo data — not the live partner list.</strong>{' '}
-            Example spots so the map can be tried. Qualified live locations will replace these from
-            the partner sheet.
-          </span>
-        </p>
-      </div>
+      <DemoBanner />
 
-      <header className="mx-auto max-w-[1180px] px-5 pb-4 pt-8 md:px-8 md:pt-12">
-        <div className="flex items-center gap-3 text-rise-deep">
-          <WaveMark className="h-6 w-14" title="Shiftwave line-wave mark" />
-          <p className="kicker m-0">Qualified demo locations</p>
-        </div>
-        <h1 className="mt-4 max-w-3xl font-display text-[2.15rem] leading-[1.08] font-medium tracking-tight text-ink sm:text-5xl md:text-[3.35rem]">
+      {showingResults ? (
+        <ResultsView
+          query={query}
+          onQueryChange={setQuery}
+          onSearch={(text) => void runSearch(text)}
+          onUseLocation={() => void useMyLocation()}
+          onReset={resetView}
+          searching={status === 'searching'}
+          locating={status === 'locating'}
+          error={error}
+          geoNote={geoNote}
+          resultLabel={!placesReady ? 'Loading try-spots…' : resultLabel}
+          radius={radius}
+          onRadius={setRadius}
+          loadFailed={loadFailed}
+          noQualified={placesReady && !loadFailed && places.length === 0}
+          emptyNearby={emptyNearby}
+          originLabel={origin?.label}
+          list={list}
+          ranked={ranked}
+          origin={origin}
+          selectedId={selectedId}
+          hoveredId={hoveredId}
+          focus={focus}
+          onSelect={selectFromList}
+          onHover={setHoveredId}
+          onSelectPin={setSelectedId}
+        />
+      ) : (
+        <LandingView
+          query={query}
+          onQueryChange={setQuery}
+          onSearch={(text) => void runSearch(text)}
+          onUseLocation={() => void useMyLocation()}
+          searching={status === 'searching'}
+          locating={status === 'locating'}
+          error={error}
+          geoNote={geoNote}
+          loadFailed={loadFailed}
+        />
+      )}
+    </div>
+  )
+}
+
+function DemoBanner() {
+  return (
+    <div className="border-b border-line bg-sand/80">
+      <p className="mx-auto flex max-w-[1180px] items-start gap-3 px-5 py-2.5 text-sm text-ink-soft md:px-8">
+        <span className="mt-1 inline-block h-2 w-2 shrink-0 rounded-full bg-coral" />
+        <span>
+          <strong className="font-semibold text-ink">Demo data — not the live partner list.</strong>{' '}
+          Example spots so the map can be tried. Qualified live locations will replace these from
+          the partner sheet.
+        </span>
+      </p>
+    </div>
+  )
+}
+
+type LandingViewProps = {
+  query: string
+  onQueryChange: (value: string) => void
+  onSearch: (query: string) => void
+  onUseLocation: () => void
+  searching: boolean
+  locating: boolean
+  error: string | null
+  geoNote: string | null
+  loadFailed: boolean
+}
+
+function LandingView({
+  query,
+  onQueryChange,
+  onSearch,
+  onUseLocation,
+  searching,
+  locating,
+  error,
+  geoNote,
+  loadFailed,
+}: LandingViewProps) {
+  return (
+    <div className="hero-wash flex min-h-[calc(100vh-3.25rem)] flex-col">
+      <main className="mx-auto flex w-full max-w-[44rem] flex-1 flex-col items-center justify-center px-5 py-16 text-center md:py-24">
+        <WaveMark className="h-7 w-16 text-rise-deep" title="Shiftwave line-wave mark" />
+        <h1 className="mt-6 font-display text-[2.35rem] leading-[1.08] font-medium tracking-tight text-ink sm:text-5xl md:text-[3.25rem]">
           Where Can I <em className="font-medium italic">Try</em> Shiftwave?
         </h1>
-        <p className="mt-4 max-w-2xl text-lg leading-relaxed text-ink-soft">
-          Full-body pulsed pressure and guided breathwork. Find a public, walk-in-appropriate
-          try-spot near you — partners who have consented to demos.
+        <p className="mt-4 max-w-lg text-lg leading-relaxed text-ink-soft">
+          Find a public try-spot near you — full-body pulsed pressure and guided breathwork.
         </p>
 
-        <form
-          className="mt-8"
-          onSubmit={(event) => {
-            event.preventDefault()
-            void runSearch(query)
-          }}
-        >
-          <label htmlFor="place-search" className="kicker">
-            ZIP, city, or address
-          </label>
-          <div className="mt-3 flex flex-col gap-3 sm:flex-row">
-            <input
-              id="place-search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="94107, Boulder, or 12 Nassau St, Princeton"
-              autoComplete="off"
-              className="focus-ring min-h-12 flex-1 rounded-[18px] border border-line bg-cream px-4 text-base text-ink shadow-[inset_0_1px_0_rgb(255_255_255_/_0.7)] placeholder:text-ink-faint/80"
-            />
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                className="focus-ring min-h-12 flex-1 rounded-[18px] bg-rise-deep px-5 text-base font-semibold text-cream sm:flex-none"
-                disabled={status === 'loading' || status === 'searching'}
-              >
-                {status === 'searching' ? 'Searching…' : 'Search'}
-              </button>
-              <button
-                type="button"
-                className="focus-ring min-h-12 flex-1 rounded-[18px] border border-line bg-cream px-4 text-base font-semibold text-ink sm:flex-none"
-                onClick={() => void useMyLocation()}
-                disabled={status === 'locating'}
-              >
-                {status === 'locating' ? 'Locating…' : 'Use my location'}
-              </button>
-            </div>
-          </div>
-        </form>
-
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className="kicker mr-1">Within</span>
-          {NEARBY_RADIUS_OPTIONS.map((miles) => (
-            <button
-              key={miles}
-              type="button"
-              className={`focus-ring rounded-full px-3 py-1 text-sm ${
-                radius === miles
-                  ? 'bg-rise-deep text-cream'
-                  : 'border border-line bg-cream text-ink-soft'
-              }`}
-              onClick={() => setRadius(miles)}
-              aria-pressed={radius === miles}
-            >
-              {miles} mi
-            </button>
-          ))}
-          {origin && (
-            <button
-              type="button"
-              className="focus-ring ml-auto rounded-full px-3 py-1 text-sm text-ink-soft underline decoration-line underline-offset-4"
-              onClick={resetView}
-            >
-              Show all US
-            </button>
-          )}
+        <div className="mt-10 w-full">
+          <SearchBar
+            variant="hero"
+            query={query}
+            onQueryChange={onQueryChange}
+            onSearch={onSearch}
+            onUseLocation={onUseLocation}
+            searching={searching}
+            locating={locating}
+          />
         </div>
 
-        {(error || geoNote) && (
-          <p className="mt-3 text-sm text-fall-deep" role="status">
-            {error || geoNote}
+        {(error || geoNote || loadFailed) && (
+          <p className="mt-5 max-w-md text-sm text-fall-deep" role="status">
+            {error ||
+              geoNote ||
+              'Locations didn’t load. Check that locations.json is present, or that VITE_LOCATIONS_URL points at the live sheet export.'}
           </p>
         )}
+      </main>
+
+      <footer className="px-5 py-6 text-center text-sm text-ink-faint">
+        Pins are qualified public demo locations only — not every purchaser.
+      </footer>
+    </div>
+  )
+}
+
+type ResultsViewProps = {
+  query: string
+  onQueryChange: (value: string) => void
+  onSearch: (query: string) => void
+  onUseLocation: () => void
+  onReset: () => void
+  searching: boolean
+  locating: boolean
+  error: string | null
+  geoNote: string | null
+  resultLabel: string
+  radius: number
+  onRadius: (miles: number) => void
+  loadFailed: boolean
+  noQualified: boolean
+  emptyNearby: boolean
+  originLabel?: string
+  list: RankedLocation[]
+  ranked: RankedLocation[]
+  origin: GeocodeResult | null
+  selectedId: string | null
+  hoveredId: string | null
+  focus: MapFocus
+  onSelect: (id: string) => void
+  onHover: (id: string | null) => void
+  onSelectPin: (id: string) => void
+}
+
+function ResultsView({
+  query,
+  onQueryChange,
+  onSearch,
+  onUseLocation,
+  onReset,
+  searching,
+  locating,
+  error,
+  geoNote,
+  resultLabel,
+  radius,
+  onRadius,
+  loadFailed,
+  noQualified,
+  emptyNearby,
+  originLabel,
+  list,
+  ranked,
+  origin,
+  selectedId,
+  hoveredId,
+  focus,
+  onSelect,
+  onHover,
+  onSelectPin,
+}: ResultsViewProps) {
+  return (
+    <>
+      <header className="border-b border-line bg-cream">
+        <div className="mx-auto flex max-w-[1180px] flex-col gap-3 px-5 py-3 md:px-8">
+          <div className="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              className="focus-ring flex min-w-0 items-center gap-2.5 rounded-full text-left text-rise-deep"
+              onClick={onReset}
+            >
+              <WaveMark className="h-5 w-12 shrink-0" title="Shiftwave line-wave mark" />
+              <span className="truncate font-display text-lg font-medium tracking-tight text-ink sm:text-xl">
+                Where Can I <em className="font-medium italic">Try</em> Shiftwave?
+              </span>
+            </button>
+            <button
+              type="button"
+              className="focus-ring shrink-0 rounded-full px-2 py-1 text-sm text-ink-soft underline decoration-line underline-offset-4"
+              onClick={onReset}
+            >
+              New search
+            </button>
+          </div>
+          <SearchBar
+            variant="compact"
+            query={query}
+            onQueryChange={onQueryChange}
+            onSearch={onSearch}
+            onUseLocation={onUseLocation}
+            searching={searching}
+            locating={locating}
+          />
+        </div>
       </header>
 
-      <main className="mx-auto grid max-w-[1180px] gap-5 px-5 pb-16 md:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] md:items-start md:px-8 lg:gap-8">
+      <main className="reveal mx-auto grid max-w-[1180px] gap-6 px-5 py-6 md:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] md:items-start md:px-8 md:py-8 lg:gap-8">
         <section id="results" className="order-2 md:order-1">
-          <div className="mb-4 flex items-end justify-between gap-3">
-            <h2 className="font-display text-2xl font-medium text-ink">
-              {status === 'loading' ? 'Loading try-spots…' : resultLabel}
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <h2 className="font-display text-[1.65rem] leading-tight font-medium text-ink">
+              {resultLabel}
             </h2>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="mr-1 text-xs font-medium tracking-wide text-ink-faint uppercase">
+                Within
+              </span>
+              {NEARBY_RADIUS_OPTIONS.map((miles) => (
+                <button
+                  key={miles}
+                  type="button"
+                  className={`focus-ring rounded-full px-3 py-1 text-sm ${
+                    radius === miles
+                      ? 'bg-rise-deep text-cream'
+                      : 'border border-line bg-cream text-ink-soft'
+                  }`}
+                  onClick={() => onRadius(miles)}
+                  aria-pressed={radius === miles}
+                >
+                  {miles} mi
+                </button>
+              ))}
+            </div>
           </div>
 
-          {status === 'error' && !places.length && (
+          {(error || geoNote) && (
+            <p className="mb-4 text-sm text-fall-deep" role="status">
+              {error || geoNote}
+            </p>
+          )}
+
+          {loadFailed && (
             <EmptyState
               title="Locations didn’t load"
               body="Check that locations.json is present, or that VITE_LOCATIONS_URL points at the live sheet export."
@@ -294,48 +464,46 @@ export function App() {
           )}
 
           {emptyNearby && (
-            <div className="mb-5">
+            <div className="mb-4">
               <EmptyState
                 title="Nothing public nearby — yet"
-                body={`We don’t have a qualified walk-in try-spot within ${radius} miles of ${origin?.label}. These are the closest example locations on the current demo list.`}
+                body={`We don’t have a qualified walk-in try-spot within ${radius} miles of ${originLabel}. These are the closest example locations on the current demo list.`}
               />
             </div>
           )}
 
-          {status === 'ready' && places.length === 0 && (
+          {noQualified && (
             <EmptyState
               title="No qualified locations"
               body="Every public pin must be marked qualified, public-facing, demo-consenting, and walk-in appropriate."
             />
           )}
 
-          {emptyNearby && (
-            <p className="kicker mb-3">Closest example locations</p>
-          )}
+          {emptyNearby && <p className="mb-2 text-sm font-medium text-ink-faint">Closest example locations</p>}
 
-          <ul className="space-y-3">
-            {(emptyNearby ? closestFallback : list).map((place) => (
+          <ul className="place-list">
+            {list.map((place) => (
               <li key={place.id}>
                 <LocationCard
                   place={place}
                   active={place.id === selectedId}
-                  onSelect={() => selectFromList(place.id)}
-                  onHover={setHoveredId}
+                  onSelect={() => onSelect(place.id)}
+                  onHover={onHover}
                 />
               </li>
             ))}
           </ul>
         </section>
 
-        <section className="order-1 h-[42vh] min-h-[280px] md:sticky md:top-5 md:order-2 md:aspect-[5/4] md:h-auto md:min-h-[480px] md:max-h-[calc(100vh-5.5rem)]">
+        <section className="order-1 h-[42vh] min-h-[280px] md:sticky md:top-4 md:order-2 md:aspect-[5/4] md:h-auto md:min-h-[480px] md:max-h-[calc(100vh-8rem)]">
           <MapCanvas
             locations={ranked}
             origin={origin}
             selectedId={selectedId}
             hoveredId={hoveredId}
             focus={focus}
-            onSelect={setSelectedId}
-            onHover={setHoveredId}
+            onSelect={onSelectPin}
+            onHover={onHover}
           />
         </section>
       </main>
@@ -344,12 +512,11 @@ export function App() {
         <div className="mx-auto flex max-w-[1180px] flex-col gap-2 px-5 py-8 text-sm text-ink-faint md:flex-row md:items-center md:justify-between md:px-8">
           <p>Pins are qualified public demo locations only — not every purchaser.</p>
           <p>
-            Map {origin ? `centered on ${origin.label}` : 'of the United States'} ·{' '}
-            {places.length} listed
+            Map {origin ? `centered on ${origin.label}` : 'of the United States'} · {ranked.length} listed
           </p>
         </div>
       </footer>
-    </div>
+    </>
   )
 }
 
@@ -359,14 +526,6 @@ function matchesState(place: LocationRecord, state?: string): boolean {
   const abbr = place.state.toLowerCase()
   const name = STATE_NAMES[place.state.toUpperCase()]?.toLowerCase()
   return abbr === needle || name === needle || formatAddress(place).toLowerCase().includes(needle)
-}
-
-function groupStable(rows: RankedLocation[]): RankedLocation[] {
-  return [...rows].sort((a, b) => {
-    const region = a.region.localeCompare(b.region)
-    if (region !== 0) return region
-    return a.name.localeCompare(b.name)
-  })
 }
 
 const STATE_NAMES: Record<string, string> = {
@@ -407,7 +566,6 @@ const STATE_NAMES: Record<string, string> = {
   ND: 'North Dakota',
   OH: 'Ohio',
   OK: 'Oklahoma',
-  OR: 'Oregon',
   PA: 'Pennsylvania',
   RI: 'Rhode Island',
   SC: 'South Carolina',

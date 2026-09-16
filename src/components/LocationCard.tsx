@@ -23,7 +23,7 @@ export function LocationCard({ place, active, onSelect, onHover }: LocationCardP
     <article
       id={`place-${place.id}`}
       data-active={active}
-      className="paper-card focus-ring cursor-pointer p-5 transition-transform duration-200 ease-out motion-reduce:transition-none"
+      className="place-row focus-ring cursor-pointer px-3 py-4 sm:px-4"
       tabIndex={0}
       role="button"
       aria-pressed={active}
@@ -39,27 +39,29 @@ export function LocationCard({ place, active, onSelect, onHover }: LocationCardP
       onFocus={() => onHover(place.id)}
       onBlur={() => onHover(null)}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="kicker mb-1.5 flex items-center gap-2">
-            <span className={`inline-block h-2 w-2 rounded-full ${PIN_COLOR[place.category]}`} />
-            {CATEGORY_LABEL[place.category]}
-            {place.region ? ` · ${place.region}` : ''}
-          </p>
-          <h3 className="font-display text-[1.35rem] leading-tight font-medium tracking-tight text-ink">
+          <h3 className="font-display text-[1.2rem] leading-tight font-medium tracking-tight text-ink sm:text-[1.28rem]">
             {place.name}
           </h3>
+          <p className="mt-1 flex items-center gap-2 text-[0.95rem] text-ink-faint">
+            <span className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${PIN_COLOR[place.category]}`} />
+            <span>
+              {CATEGORY_LABEL[place.category]}
+              {place.region ? ` · ${place.region}` : ''}
+            </span>
+          </p>
         </div>
         {place.distanceMiles != null && (
-          <span className="shrink-0 rounded-full bg-sand px-2.5 py-1 text-sm font-medium text-rise-deep">
+          <span className="shrink-0 pt-0.5 text-sm tabular-nums text-ink-soft">
             {formatMiles(place.distanceMiles)}
           </span>
         )}
       </div>
 
-      <dl className="mt-4 space-y-2 text-[0.98rem] text-ink-soft">
+      <dl className="mt-2.5 space-y-1 text-[0.95rem] text-ink-soft">
         {address && (
-          <div className="flex gap-2">
+          <div>
             <dt className="sr-only">Address</dt>
             <dd>
               <a
