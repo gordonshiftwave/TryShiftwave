@@ -105,6 +105,34 @@ function str(value: unknown): string {
   return String(value ?? '').trim()
 }
 
+/** Display phone as (XXX) XXX-XXXX when the value is a 10-digit US number. */
+export function formatPhone(value: string): string {
+  const digits = value.replace(/\D/g, '')
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`
+  }
+  if (digits.length === 11 && digits.startsWith('1')) {
+    return `(${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`
+  }
+  return value
+}
+
+export function telHref(value: string): string {
+  const digits = value.replace(/[^\d+]/g, '')
+  return digits ? `tel:${digits}` : ''
+}
+
+/** Never invent hours. Blank / "Call for hours" become a quiet unavailable label. */
+export function normalizeHours(value: string): string {
+  const s = value.trim()
+  if (!s || /^call for hours$/i.test(s)) return 'Hours unavailable'
+  return s
+}
+
+export function hoursAreUnavailable(value: string): boolean {
+  return !value.trim() || /^hours unavailable$/i.test(value.trim())
+}
+
 function num(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return value
   const n = Number(String(value ?? '').trim())
@@ -150,9 +178,9 @@ export function parseRow(
     zip,
     lat,
     lng,
-    phone: str(src.phone),
+    phone: formatPhone(str(src.phone)),
     email: str(src.email),
-    hours: str(src.hours),
+    hours: normalizeHours(str(src.hours)),
     website: str(src.website),
     category: categoryOf(src.category),
     region: str(src.region),

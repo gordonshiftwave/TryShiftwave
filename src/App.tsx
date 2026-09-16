@@ -263,8 +263,8 @@ function LiveListBanner() {
         <span className="mt-1 inline-block h-2 w-2 shrink-0 rounded-full bg-energy" />
         <span>
           <strong className="font-semibold text-ink">Live partner list.</strong> Qualified public
-          try-spots from the partner sheet. Hours may require a call. Some pins are city-level until
-          a street address is added.
+          try-spots from the partner sheet. Hours are listed when published. Some pins are
+          city-level until a street address is added.
         </span>
       </p>
     </div>

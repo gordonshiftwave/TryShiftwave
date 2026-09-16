@@ -12,7 +12,7 @@ If that URL 404s, Gordon needs one click: **Settings → Pages → Build and dep
 
 [`public/locations.json`](public/locations.json) is a **static snapshot** of qualified partners from Dani’s *Shiftwave Clinic & Commercial List* (rows where “Can we send people there to Demo?” = YES). No Shopify, no Google write access, and no secrets. To refresh, export the sheet and replace that file (or point `VITE_LOCATIONS_URL` at a CORS-enabled JSON/CSV feed).
 
-> Live partner list. Only **qualified** public try-spots appear on the map (public-facing, demo consent, walk-in appropriate). The sheet has no street-address column and no hours column — pins are city/ZIP, and hours are “Call for hours.” Ambassadors, pop-ups, booking, and heat maps are out of scope here.
+> Live partner list. Only **qualified** public try-spots appear on the map (public-facing, demo consent, walk-in appropriate). Pins are still city/ZIP (the sheet has no street-address column). Hours are public listing hours where found, otherwise **Hours unavailable**. Ambassadors, pop-ups, booking, and heat maps are out of scope here.
 
 ## Run locally
 
@@ -50,7 +50,9 @@ Brand tokens match [shiftwave.co](https://shiftwave.co/) for merge — Montserra
 
 Runtime file: [`public/locations.json`](public/locations.json)
 
-The loader lives in `src/data/`. It accepts **JSON or CSV**. Field names from the sheet (`address` instead of `street`, full state names, free-form categories) are mapped in `parse.ts`. Street lines and hours are **not invented** — empty street stays empty; hours stay “Call for hours” until the sheet has them.
+The loader lives in `src/data/`. It accepts **JSON or CSV**. Field names from the sheet (`address` instead of `street`, full state names, free-form categories) are mapped in `parse.ts`. Street lines and hours are **not invented** — empty street stays empty; missing hours display as **Hours unavailable** (never “Call for hours”).
+
+Public hours/phones were enriched from official sites and directories (42/63 hours, 57/63 phones). Names still unresolved for hours (and some phones): Intentional Wellness Institute, Jill Sumiyasu, Keller Street Co-Work, Lit From Within, The Portal, Transformations, Maureen Whatley, Lovetree Alchemy, Kansas City Neuroplasticity Institute, Chris Collins, The Menopause Method, Disney Family Therapy, Dr. Karen Wright, Dr. Tim Patel, Halo Mental Health, Dr. Frank Lipman, Libertas Cryo, Dr. Anette Scott, Lucia Gadney, Sonder Psychotherapy, Heike Tabatabai.
 
 ### Refresh from the sheet later
 
@@ -89,7 +91,7 @@ Header row of the Google Sheet should use these names (snake_case). Aliases such
 | `lng` | yes | WGS84 longitude |
 | `phone` | if no email | Display + `tel:` link |
 | `email` | if no phone | Display + `mailto:` link |
-| `hours` | recommended | Single human-readable string. Snapshot uses `Call for hours`. |
+| `hours` | recommended | Single human-readable string. Use `Hours unavailable` when unknown. |
 | `website` | optional | Reserved for later |
 | `category` | optional | Sheet label shown in the list (e.g. `Longevity / Wellness Center`) |
 | `region` | optional | Grouping label (`Bay Area`, `Central New Jersey`) |
