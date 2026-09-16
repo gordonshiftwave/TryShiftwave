@@ -28,6 +28,8 @@ export function LocationMap({
   const selectedRef = useRef(selectedId);
   selectedRef.current = selectedId;
   const skipSelectionFlyRef = useRef(false);
+  const originRef = useRef(origin);
+  originRef.current = origin;
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -46,6 +48,9 @@ export function LocationMap({
     mapRef.current = map;
 
     map.on("load", async () => {
+      if (!originRef.current) {
+        map.fitBounds(CONTIGUOUS_US_BOUNDS, { padding: 28, duration: 0 });
+      }
       try {
         const res = await fetch("/us-states.json");
         const states = (await res.json()) as FeatureCollection;
