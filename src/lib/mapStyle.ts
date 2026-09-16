@@ -4,6 +4,10 @@ import type { CameraTarget } from '../types/location'
 
 export const US_CENTER: [number, number] = [-97.5, 39.2]
 export const US_ZOOM = 3.55
+const CONUS_BOUNDS: [[number, number], [number, number]] = [
+  [-125.2, 24.3],
+  [-66.4, 49.5],
+]
 
 export function applyCamera(
   map: import('maplibre-gl').Map,
@@ -15,7 +19,7 @@ export function applyCamera(
   const duration = reduced ? 0 : 900
 
   if (camera.type === 'us') {
-    map.easeTo({ center: US_CENTER, zoom: US_ZOOM, duration })
+    map.fitBounds(CONUS_BOUNDS, { padding: 28, duration })
     return
   }
   if (camera.type === 'point') {
@@ -134,6 +138,8 @@ export async function loadPaperMapStyle(): Promise<StyleSpecification> {
     const response = await fetch('https://tiles.openfreemap.org/styles/positron')
     if (!response.ok) throw new Error('style fetch failed')
     const style = (await response.json()) as StyleSpecification
+    style.center = US_CENTER
+    style.zoom = US_ZOOM
     return recolor(style)
   } catch {
     return RASTER_FALLBACK

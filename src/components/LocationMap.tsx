@@ -98,6 +98,10 @@ export function LocationMap({
         map?.resize()
         applyCamera(map as MapLibreMap, cameraRef.current)
         setMapReady(true)
+        requestAnimationFrame(() => {
+          map?.resize()
+          if (map) applyCamera(map, cameraRef.current)
+        })
       })
       map.on('click', (event) => {
         const target = event.originalEvent.target
@@ -204,10 +208,10 @@ export function LocationMap({
   }, [camera, mapReady])
 
   return (
-    <div className="surface-card relative overflow-hidden">
+    <div className="surface-card relative h-full overflow-hidden">
       <div
         ref={containerRef}
-        className="map-frame h-[min(58vh,420px)] w-full lg:h-[min(720px,calc(100vh-12rem))]"
+      className="map-frame h-[min(52vh,380px)] w-full lg:h-full"
         role="region"
         aria-label="Map of Shiftwave try-spots"
       />

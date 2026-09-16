@@ -210,12 +210,12 @@ export default function App() {
   }
 
   return (
-    <div className="paper-wash relative min-h-svh">
+    <div className="paper-wash relative min-h-svh lg:h-svh lg:overflow-hidden">
       <div className="paper-grain" aria-hidden="true" />
-      <div className="relative mx-auto w-full max-w-[1180px] px-4 pt-8 pb-6 sm:px-6 sm:pt-12">
-        <header className="mb-8 flex items-center justify-between gap-4">
+      <div className="relative mx-auto flex min-h-svh w-full max-w-[1180px] flex-col px-4 pt-6 pb-4 sm:px-6 lg:h-svh">
+        <header className="mb-5 flex shrink-0 items-center justify-between gap-4">
           <div className="flex items-center gap-3 text-rise">
-            <WaveMark className="h-9 w-9" />
+            <WaveMark className="h-8 w-8" />
             <p className="font-display text-lg tracking-wide text-ink-soft italic">
               Shiftwave
             </p>
@@ -223,20 +223,20 @@ export default function App() {
           <p className="hidden text-sm text-ink-faint sm:block">In-person demos</p>
         </header>
 
-        <section className="max-w-3xl">
+        <section className="max-w-3xl shrink-0">
           <p className="text-xs font-medium tracking-[0.22em] text-ink-faint uppercase">
             Find a session nearby
           </p>
-          <h1 className="font-display mt-3 text-[clamp(2.15rem,6vw,3.7rem)] leading-[1.08] font-medium tracking-[-0.02em] text-ink">
+          <h1 className="font-display mt-2 text-[clamp(2rem,4.6vw,3.15rem)] leading-[1.08] font-medium tracking-[-0.02em] text-ink">
             Where Can I Try Shiftwave?
           </h1>
-          <p className="mt-5 max-w-2xl text-lg leading-relaxed text-ink-soft">
+          <p className="mt-3 max-w-2xl text-base leading-relaxed text-ink-soft sm:text-lg">
             Pulsed pressure and guided breathwork, in person — at qualified studios,
             clinics, and gyms. Search a ZIP, use your location, or browse a state.
           </p>
         </section>
 
-        <div className="mt-8 flex flex-col gap-4">
+        <div className="mt-5 flex shrink-0 flex-col gap-3">
           <DemoBanner source={source} />
           {loadError ? (
             <p className="text-sm text-fall" role="alert">
@@ -261,35 +261,35 @@ export default function App() {
           />
         </div>
 
-        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:items-start">
-          <div className="order-2 lg:order-1">
+        <div className="mt-4 grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] lg:overflow-hidden">
+          <div className="order-2 min-h-0 lg:order-1 lg:overflow-hidden">
             {all.length === 0 && !loadError ? (
               <div className="surface-card px-5 py-10 text-sm text-ink-soft">
                 Loading try-spots…
               </div>
             ) : (
               <LocationList
-              places={visible}
-              selectedId={selectedId}
-              heading={heading}
-              subheading={subheading}
-              emptyTitle={emptyTitle}
-              emptyBody={emptyBody}
-              onSelect={(id) => handleSelect(id)}
-              onHover={setHoveredId}
-              onWiden={() => setRadius(250)}
-              onNearest={() => {
-                setRadius('any')
-                setStateFilter(null)
-              }}
-              showEmptyActions={hasQueryContext}
-            />
+                places={visible}
+                selectedId={selectedId}
+                heading={heading}
+                subheading={subheading}
+                emptyTitle={emptyTitle}
+                emptyBody={emptyBody}
+                onSelect={(id) => handleSelect(id)}
+                onHover={setHoveredId}
+                onWiden={() => setRadius(250)}
+                onNearest={() => {
+                  setRadius('any')
+                  setStateFilter(null)
+                }}
+                showEmptyActions={hasQueryContext}
+              />
             )}
           </div>
-          <div className="order-1 lg:sticky lg:top-4 lg:order-2">
+          <div className="order-1 min-h-0 lg:order-2">
             <Suspense
               fallback={
-                <div className="surface-card flex h-[min(58vh,420px)] items-center justify-center text-sm text-ink-soft lg:h-[min(720px,calc(100vh-12rem))]">
+                <div className="surface-card flex h-[min(52vh,380px)] items-center justify-center text-sm text-ink-soft lg:h-full">
                   Loading map…
                 </div>
               }
@@ -307,7 +307,9 @@ export default function App() {
           </div>
         </div>
 
-        <SiteFooter />
+        <div className="shrink-0">
+          <SiteFooter />
+        </div>
       </div>
     </div>
   )

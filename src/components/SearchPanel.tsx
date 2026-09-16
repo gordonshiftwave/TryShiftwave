@@ -33,15 +33,15 @@ export function SearchPanel({
 }: SearchPanelProps) {
   return (
     <form
-      className="surface-card p-4 sm:p-5"
+      className="surface-card p-3 sm:p-4"
       onSubmit={(event) => {
         event.preventDefault()
         onSearch()
       }}
     >
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-stretch">
-          <label className="flex min-w-0 flex-1 flex-col gap-1.5">
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-end">
+          <label className="flex min-w-0 flex-1 flex-col gap-1">
             <span className="text-xs font-medium tracking-wide text-ink-faint uppercase">
               ZIP, city, or address
             </span>
@@ -51,10 +51,10 @@ export function SearchPanel({
               placeholder="94123, Boulder, or 10014"
               autoComplete="postal-code"
               enterKeyHint="search"
-              className="surface-field h-12 w-full rounded-[18px] px-4 text-base text-ink placeholder:text-ink-faint/70"
+              className="surface-field h-11 w-full rounded-[16px] px-4 text-base text-ink placeholder:text-ink-faint/70"
             />
           </label>
-          <label className="flex w-full flex-col gap-1.5 lg:w-40">
+          <label className="flex w-full flex-col gap-1 lg:w-[8.5rem]">
             <span className="text-xs font-medium tracking-wide text-ink-faint uppercase">
               Within
             </span>
@@ -64,7 +64,7 @@ export function SearchPanel({
                 const next = event.target.value
                 onRadiusChange(next === 'any' ? 'any' : (Number(next) as RadiusMiles))
               }}
-              className="surface-field h-12 w-full rounded-[18px] px-3 text-base text-ink"
+              className="surface-field h-11 w-full rounded-[16px] px-3 text-base text-ink"
             >
               {RADII.map((option) => (
                 <option key={String(option.value)} value={String(option.value)}>
@@ -73,12 +73,10 @@ export function SearchPanel({
               ))}
             </select>
           </label>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
           <button
             type="submit"
             disabled={searching}
-            className="inline-flex h-12 flex-1 items-center justify-center rounded-[18px] bg-rise px-5 text-sm font-semibold tracking-wide text-cream transition-colors hover:bg-focus disabled:opacity-60"
+            className="inline-flex h-11 items-center justify-center rounded-[16px] bg-rise px-5 text-sm font-semibold tracking-wide text-cream transition-colors hover:bg-focus disabled:opacity-60 lg:px-6"
           >
             {searching ? 'Searching…' : 'Find try-spots'}
           </button>
@@ -86,7 +84,7 @@ export function SearchPanel({
             type="button"
             onClick={onUseLocation}
             disabled={locating}
-            className="inline-flex h-12 flex-1 items-center justify-center rounded-[18px] border border-line bg-cream px-5 text-sm font-semibold text-ink transition-colors hover:bg-sand disabled:opacity-60"
+            className="inline-flex h-11 items-center justify-center rounded-[16px] border border-line bg-cream px-5 text-sm font-semibold text-ink transition-colors hover:bg-sand disabled:opacity-60"
           >
             {locating ? 'Locating…' : 'Use my location'}
           </button>

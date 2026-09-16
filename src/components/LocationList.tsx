@@ -63,7 +63,7 @@ export function LocationList({
       </div>
       <div
         ref={listRef}
-        className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1 lg:max-h-[min(720px,calc(100vh-12rem))]"
+        className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pr-1"
       >
         {places.map((place) => (
           <LocationCard
