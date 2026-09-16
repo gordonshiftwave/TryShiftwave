@@ -259,7 +259,7 @@ export function App() {
 function LiveListBanner() {
   return (
     <div className="live-banner">
-      <p className="mx-auto flex max-w-[1180px] items-start gap-3 px-5 py-2.5 text-sm text-ink-soft md:px-8">
+      <p className="mx-auto flex max-w-[1180px] items-start gap-2.5 px-5 py-2 text-[0.8rem] leading-snug text-ink-soft sm:gap-3 sm:py-2.5 sm:text-sm md:px-8">
         <span className="mt-1 inline-block h-2 w-2 shrink-0 rounded-full bg-rise-deep" />
         <span>
           <strong className="font-semibold text-ink">Live partner list.</strong> Qualified public
@@ -400,7 +400,10 @@ function ResultsView({
             >
               <WaveMark className="h-5 w-12 shrink-0" title="Shiftwave line-wave mark" />
               <span className="font-display text-[0.98rem] leading-snug font-medium tracking-tight text-ink sm:text-xl">
-                Where Can I <em className="font-medium italic">Try</em> Shiftwave?
+                <span className="sm:hidden">Try Shiftwave</span>
+                <span className="hidden sm:inline">
+                  Where Can I <em className="font-medium italic">Try</em> Shiftwave?
+                </span>
               </span>
             </button>
             <button
@@ -423,8 +426,8 @@ function ResultsView({
         </div>
       </header>
 
-      <main className="reveal mx-auto grid max-w-[1180px] gap-5 px-4 py-5 sm:px-5 sm:py-6 md:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] md:items-start md:gap-7 md:px-8 md:py-8 lg:gap-8">
-        <section id="results" className="order-2 md:order-1">
+      <main className="reveal mx-auto grid max-w-[1180px] gap-5 overflow-x-hidden px-4 py-5 sm:px-5 sm:py-6 md:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] md:items-start md:gap-7 md:px-8 md:py-8 lg:gap-8">
+        <section id="results" className="order-2 min-w-0 md:order-1">
           <div className="mb-4 sm:mb-5">
             <h2 className="font-display text-[1.45rem] leading-tight font-medium text-ink sm:text-[1.7rem]">
               {resultLabel}
@@ -492,7 +495,7 @@ function ResultsView({
           </ul>
         </section>
 
-        <section className="order-1 h-[38vh] min-h-[240px] sm:h-[42vh] sm:min-h-[280px] md:sticky md:top-[5.5rem] md:order-2 md:aspect-[5/4] md:h-auto md:min-h-[480px] md:max-h-[calc(100dvh-8rem)]">
+        <section className="order-1 min-h-[220px] min-w-0 overflow-hidden h-[36vh] sm:h-[42vh] sm:min-h-[280px] md:sticky md:top-32 md:order-2 md:h-[calc(100dvh-9.5rem)] md:min-h-[28rem] md:aspect-auto">
           <MapCanvas
             locations={ranked}
             origin={origin}

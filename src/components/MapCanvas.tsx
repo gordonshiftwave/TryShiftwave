@@ -183,8 +183,11 @@ export function MapCanvas({
   }, [focus])
 
   return (
-    <div className="map-shell paper-card relative h-full min-h-[240px] overflow-hidden p-1.5 md:min-h-[480px]">
-      <div ref={containerRef} className="h-full min-h-[228px] overflow-hidden rounded-[22px] md:min-h-[468px]" />
+    <div className="map-shell paper-card relative h-full w-full min-h-[240px] max-w-full overflow-hidden p-1.5 md:min-h-[480px]">
+      <div
+        ref={containerRef}
+        className="h-full w-full min-h-[228px] max-w-full overflow-hidden rounded-[22px] md:min-h-[468px]"
+      />
     </div>
   )
 }
