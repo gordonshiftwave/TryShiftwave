@@ -1,5 +1,8 @@
-import type { FormEvent } from 'react'
+import { useEffect, useRef, type FormEvent } from 'react'
 import { usePushToTalk } from '../speech/usePushToTalk'
+
+/** Short beat so the spoken words paint in the field before results replace the landing. */
+const SEARCH_AFTER_TRANSCRIPT_MS = 450
 
 type SearchBarProps = {
   variant: 'hero' | 'compact'
@@ -24,18 +27,51 @@ export function SearchBar({
 }: SearchBarProps) {
   const isHero = variant === 'hero'
   const inputId = 'place-search'
-  const { listening, note, toggle } = usePushToTalk({
+  const searchTimerRef = useRef<number | null>(null)
+
+  function clearScheduledSearch() {
+    if (searchTimerRef.current != null) {
+      window.clearTimeout(searchTimerRef.current)
+      searchTimerRef.current = null
+    }
+  }
+
+  function scheduleSearch(text: string) {
+    clearScheduledSearch()
+    const q = text.trim()
+    if (!q) return
+    searchTimerRef.current = window.setTimeout(() => {
+      searchTimerRef.current = null
+      onSearch(q)
+    }, SEARCH_AFTER_TRANSCRIPT_MS)
+  }
+
+  const { listening, note, toggle, cancel } = usePushToTalk({
     disabled: disabled || searching,
-    onTranscript: onQueryChange,
+    onTranscript: (value) => {
+      onQueryChange(value)
+    },
     onFinal: (text) => {
       onQueryChange(text)
-      onSearch(text)
+      scheduleSearch(text)
     },
   })
 
+  useEffect(() => {
+    return () => clearScheduledSearch()
+  }, [])
+
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
+    cancel()
+    clearScheduledSearch()
     onSearch(query)
+  }
+
+  function handleQueryInput(value: string) {
+    if (listening) cancel()
+    clearScheduledSearch()
+    onQueryChange(value)
   }
 
   return (
@@ -67,10 +103,8 @@ export function SearchBar({
             id={inputId}
             name="q"
             value={query}
-            onChange={(event) => onQueryChange(event.target.value)}
-            placeholder={
-              listening ? 'Listening…' : isHero ? 'ZIP, city, or address' : 'Search ZIP, city, or address'
-            }
+            onChange={(event) => handleQueryInput(event.target.value)}
+            placeholder={isHero ? 'ZIP, city, or address' : 'Search ZIP, city, or address'}
             autoComplete="off"
             enterKeyHint="search"
             disabled={disabled}

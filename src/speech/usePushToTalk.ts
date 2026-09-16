@@ -126,7 +126,7 @@ export function usePushToTalk({ onTranscript, onFinal, disabled = false }: UsePu
     finalRef.current = ''
     liveRef.current = ''
     userStoppedRef.current = false
-    setNote('Listening… tap the mic to stop.')
+    setNote('Listening… your words appear in the search box. Tap the mic to stop.')
 
     const rec = new Ctor()
     rec.lang = 'en-US'
@@ -215,6 +215,24 @@ export function usePushToTalk({ onTranscript, onFinal, disabled = false }: UsePu
     }
   }, [start, stop])
 
+  /** Drop the session without searching — used when the user takes over by typing. */
+  const cancel = useCallback(() => {
+    sessionRef.current += 1
+    finalRef.current = ''
+    liveRef.current = ''
+    userStoppedRef.current = true
+    listeningRef.current = false
+    setListening(false)
+    setNote(null)
+    const rec = recognitionRef.current
+    recognitionRef.current = null
+    try {
+      rec?.abort()
+    } catch {
+      /* already stopped */
+    }
+  }, [])
+
   useEffect(() => {
     return () => {
       sessionRef.current += 1
@@ -233,5 +251,5 @@ export function usePushToTalk({ onTranscript, onFinal, disabled = false }: UsePu
     if (disabled && listeningRef.current) stop()
   }, [disabled, stop])
 
-  return { listening, note, supported, toggle, stop }
+  return { listening, note, supported, toggle, stop, cancel }
 }
