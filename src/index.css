@@ -94,7 +94,7 @@ body {
   border-radius: 999px;
   background: var(--color-sky);
   border: 2px solid var(--color-cream);
-  box-shadow: 0 0 0 1px rgb(62 101 116 / 0.18);
+  box-shadow: 0 0 0 1px rgb(62 101 116 / 0.22);
   cursor: pointer;
   transform: translate(-50%, -50%);
 }

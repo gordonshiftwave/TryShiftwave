@@ -91,7 +91,7 @@ No paid map or geocode key is required.
 
 - 5-digit ZIP → [Zippopotam.us](https://zippopotam.us/)
 - City / address → [Photon](https://photon.komoot.io/) (OpenStreetMap), US results preferred
-- Map tiles → MapLibre GL + CARTO light raster tiles (OSM attribution shown on the map)
+- Map tiles → MapLibre GL + [OpenFreeMap](https://openfreemap.org/) Positron (OpenStreetMap data, no API key)
 
 ## Brand
 

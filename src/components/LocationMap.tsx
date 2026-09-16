@@ -1,27 +1,10 @@
 import { useEffect, useRef } from "react";
-import maplibregl, { type Map as MapLibreMap, type StyleSpecification } from "maplibre-gl";
+import maplibregl, { type Map as MapLibreMap } from "maplibre-gl";
 import type { FeatureCollection, Geometry } from "geojson";
 import type { DemoLocation, GeoOrigin } from "../types";
 import { CONTIGUOUS_US_BOUNDS, prefersReducedMotion } from "../lib/geo";
 
-const MAP_STYLE: StyleSpecification = {
-  version: 8,
-  name: "paper-positron",
-  sources: {
-    carto: {
-      type: "raster",
-      tiles: [
-        "https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png",
-        "https://b.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png",
-        "https://c.basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png",
-      ],
-      tileSize: 256,
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-    },
-  },
-  layers: [{ id: "carto", type: "raster", source: "carto" }],
-};
+const MAP_STYLE = "https://tiles.openfreemap.org/styles/positron";
 
 type LocationMapProps = {
   locations: DemoLocation[];
@@ -71,30 +54,39 @@ export function LocationMap({
           data: states,
           generateId: true,
         });
-        map.addLayer({
-          id: "states-fill",
-          type: "fill",
-          source: "states",
-          paint: {
-            "fill-color": "#b7d3e3",
-            "fill-opacity": [
-              "case",
-              ["boolean", ["feature-state", "hover"], false],
-              0.28,
-              0.08,
-            ],
+        const beforeId = map
+          .getStyle()
+          .layers?.find((layer) => layer.type === "symbol")?.id;
+        map.addLayer(
+          {
+            id: "states-fill",
+            type: "fill",
+            source: "states",
+            paint: {
+              "fill-color": "#b7d3e3",
+              "fill-opacity": [
+                "case",
+                ["boolean", ["feature-state", "hover"], false],
+                0.28,
+                0.08,
+              ],
+            },
           },
-        });
-        map.addLayer({
-          id: "states-line",
-          type: "line",
-          source: "states",
-          paint: {
-            "line-color": "#9fbe99",
-            "line-width": 0.8,
-            "line-opacity": 0.55,
+          beforeId,
+        );
+        map.addLayer(
+          {
+            id: "states-line",
+            type: "line",
+            source: "states",
+            paint: {
+              "line-color": "#9fbe99",
+              "line-width": 0.8,
+              "line-opacity": 0.55,
+            },
           },
-        });
+          beforeId,
+        );
 
         let hovered: string | number | undefined;
         map.on("mousemove", "states-fill", (event) => {

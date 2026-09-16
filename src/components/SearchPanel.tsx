@@ -61,7 +61,7 @@ export function SearchPanel({
           <button
             type="submit"
             disabled={busy || query.trim().length === 0}
-            className="flex-1 sm:flex-none h-12 sm:h-14 px-5 rounded-[18px] bg-rise text-cream font-semibold disabled:opacity-50 hover:brightness-[1.04] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            className="flex-1 sm:flex-none h-12 sm:h-14 px-5 rounded-[18px] bg-rise text-cream font-semibold whitespace-nowrap disabled:opacity-50 hover:brightness-[1.04] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
           >
             {searching ? "Searching…" : "Find spots"}
           </button>
@@ -69,7 +69,7 @@ export function SearchPanel({
             type="button"
             onClick={onUseLocation}
             disabled={busy}
-            className="flex-1 sm:flex-none h-12 sm:h-14 px-4 rounded-[18px] border border-line bg-cream text-ink font-semibold hover:bg-sand disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+            className="flex-1 sm:flex-none h-12 sm:h-14 px-4 rounded-[18px] border border-line bg-cream text-ink font-semibold whitespace-nowrap hover:bg-sand disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
           >
             {locating ? "Locating…" : "Use my location"}
           </button>
