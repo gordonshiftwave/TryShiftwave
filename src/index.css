@@ -278,6 +278,79 @@ textarea {
   opacity: 0.72;
 }
 
+.mic-btn {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  margin: 0 0.1rem 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-ink-faint);
+  cursor: pointer;
+  transition:
+    color 160ms var(--ease-out),
+    background-color 160ms var(--ease-out);
+}
+
+.mic-btn--hero {
+  width: 2.85rem;
+  height: 2.85rem;
+}
+
+.mic-btn--compact {
+  width: 2.35rem;
+  height: 2.35rem;
+}
+
+.mic-btn:hover:not(:disabled) {
+  color: var(--color-ink);
+  background: var(--color-paper-deep);
+}
+
+.mic-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.mic-btn--listening {
+  color: var(--color-cta);
+}
+
+.mic-btn__pulse {
+  position: absolute;
+  inset: 3px;
+  z-index: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-peach-warm) 50%, var(--color-peach));
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mic-btn--listening .mic-btn__pulse {
+  animation: mic-pulse 1.8s var(--ease-out) infinite;
+}
+
+.mic-btn__icon {
+  position: relative;
+  z-index: 1;
+  display: flex;
+}
+
+@keyframes mic-pulse {
+  from {
+    transform: scale(0.72);
+    opacity: 0.4;
+  }
+  to {
+    transform: scale(1.12);
+    opacity: 0;
+  }
+}
+
 .site-btn {
   border-radius: var(--radius-button);
   padding: 0.55rem 1.25rem;
@@ -572,6 +645,7 @@ textarea {
   .place-row,
   .search-shell,
   .search-submit,
+  .mic-btn,
   .radius-chip {
     transition: none !important;
   }
@@ -582,6 +656,7 @@ textarea {
 
   .reveal,
   .origin-mark__pulse,
+  .mic-btn__pulse,
   .reset-stanza > span {
     animation: none;
   }
