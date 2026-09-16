@@ -408,7 +408,7 @@ function ResultsView({
             </button>
             <button
               type="button"
-              className="focus-ring shrink-0 rounded-full border border-line bg-cream px-3 py-1.5 text-sm text-ink-soft hover:bg-paper-deep"
+              className="site-btn focus-ring shrink-0 text-sm hover:bg-paper-deep"
               onClick={onReset}
             >
               New search

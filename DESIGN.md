@@ -23,7 +23,7 @@ One family everywhere: **`Montserrat, sans-serif`**. Google Fonts 500 / 600 / 70
 | Headings | **600** | **1.3** | **0** |
 | Body / UI / buttons / nav | **500** | ~24–25px at 15–17px (~1.5) | **-0.005em** |
 
-Prefer 500 / 600. Use 700 only for strong emphasis. Body is **16px / line-height 1.5**.
+Prefer 500 / 600. Use 700 only for strong emphasis. Body is **16px / line-height 1.5** (24px), matching the site’s ~15–17px / ~24–25px body. Headings **600 / 1.3 / tracking 0**. Buttons and nav **500**.
 
 ## Color
 
@@ -60,9 +60,19 @@ Growth-board **aqua `#0FA3A8` / violet `#6F5FE8` / coral `#E5563D`** are OK **on
 
 Default pins are Energy `#E43A00` so they pop on the light paper basemap without fighting Montserrat or site neutrals. Selected pin is Calm `#3911AC`. Origin is a black/near-black dot (same language as Search) with a peach pulse.
 
-## Chrome
+## Chrome (live shiftwave.co scrape)
 
-Content max ~1100px. Panels ~18px radius. Search stays a Google-like pill (site marketing buttons are ~6px and are not cloned onto the locator). Spacious section padding. `prefers-reduced-motion` honored.
+Cinematic, minimal. Generous air. Do not densify.
+
+| Measure | Site | This finder |
+| --- | --- | --- |
+| Max content | ~1100px | `max-w-[1100px]` |
+| Content panels | ~18px radius | `--radius-card: 18px` |
+| Marketing buttons | ~6px radius, ~15×20 padding, weight 500 | `--radius-button: 6px` on secondary actions (New search). **Search stays a Google-like pill** — site 6px is not cloned onto the locator field. |
+| Surfaces | `#FFFFFF` / `#FAFAFA` / `#F7F4EF` | paper, fog, paper-deep |
+| Near-black | `#282828` charcoal | Search hover + secondary button type |
+
+Press kit: [shiftwave.co/pages/press](https://shiftwave.co/pages/press) — no separate public type PDF. `prefers-reduced-motion` honored.
 
 ## UX pattern (Google “find near me”)
 
