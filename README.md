@@ -8,7 +8,7 @@ Public map for finding a nearby place to **try Shiftwave** — full-body pulsed 
 
 Pushes to `main` run `.github/workflows/deploy-pages.yml` (`npm ci`, `npm run build`, deploy `dist/` via GitHub Pages). Vite `base` is `/TryShiftwave/` for this project site. A custom domain or `username.github.io` user site would need `base: '/'` in `vite.config.ts`.
 
-If that URL 404s after the first successful Actions run, Gordon needs one click: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+If that URL 404s, Gordon needs one click: **Settings → Pages → Build and deployment → Source: GitHub Actions**. Then open **Actions → Deploy GitHub Pages** and **Re-run failed jobs**. The first run’s `build` job already succeeded; `deploy` returns 404 until Pages is enabled (this token cannot flip that setting via the API).
 
 [`public/locations.json`](public/locations.json) is a **static snapshot** of qualified partners from Dani’s *Shiftwave Clinic & Commercial List* (rows where “Can we send people there to Demo?” = YES). No Shopify, no Google write access, and no secrets. To refresh, export the sheet and replace that file (or point `VITE_LOCATIONS_URL` at a CORS-enabled JSON/CSV feed).
 
