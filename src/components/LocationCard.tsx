@@ -3,10 +3,10 @@ import { formatAddress, mapsUrl } from '../data/parse'
 import { formatMiles } from '../geo/distance'
 
 const PIN_COLOR: Record<LocationCategory, string> = {
-  clinic: 'bg-sky',
-  gym: 'bg-coral',
-  wellness: 'bg-sage',
-  studio: 'bg-lavender',
+  clinic: 'bg-energy',
+  gym: 'bg-peach-warm',
+  wellness: 'bg-calm',
+  studio: 'bg-indigo',
 }
 
 type LocationCardProps = {
@@ -41,7 +41,7 @@ export function LocationCard({ place, active, onSelect, onHover }: LocationCardP
     >
       <div className="flex items-start justify-between gap-3 sm:gap-5">
         <div className="min-w-0">
-          <h3 className="font-display text-[1.05rem] leading-[1.2] font-medium tracking-tight text-ink sm:text-[1.18rem]">
+          <h3 className="font-display text-[1.05rem] font-semibold leading-[1.3] tracking-normal text-ink sm:text-[1.18rem]">
             {place.name}
           </h3>
           <p className="mt-0.5 flex items-center gap-2 text-[0.78rem] leading-snug text-ink-faint sm:text-[0.82rem]">
@@ -65,7 +65,7 @@ export function LocationCard({ place, active, onSelect, onHover }: LocationCardP
             <dt className="sr-only">Address</dt>
             <dd>
               <a
-                className="focus-ring rounded-sm underline decoration-line underline-offset-4 hover:text-focus"
+                className="focus-ring rounded-sm underline decoration-line underline-offset-4 hover:text-energy"
                 href={mapsUrl(place)}
                 target="_blank"
                 rel="noreferrer"
@@ -87,7 +87,7 @@ export function LocationCard({ place, active, onSelect, onHover }: LocationCardP
             {place.phone && (
               <dd>
                 <a
-                  className="focus-ring rounded-sm hover:text-focus"
+                  className="focus-ring rounded-sm hover:text-energy"
                   href={`tel:${place.phone.replace(/[^\d+]/g, '')}`}
                   onClick={(event) => event.stopPropagation()}
                 >
@@ -98,7 +98,7 @@ export function LocationCard({ place, active, onSelect, onHover }: LocationCardP
             {place.email && (
               <dd>
                 <a
-                  className="focus-ring rounded-sm hover:text-focus"
+                  className="focus-ring rounded-sm hover:text-energy"
                   href={`mailto:${place.email}`}
                   onClick={(event) => event.stopPropagation()}
                 >

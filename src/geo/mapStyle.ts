@@ -1,6 +1,7 @@
 import type { LngLatBoundsLike, Map as MapLibreMap } from 'maplibre-gl'
+import { tokens } from '../theme/tokens'
 
-/** Recolor OpenFreeMap Positron: paper ground, sky water, sage parks — low-arousal, not grey chrome. */
+/** Recolor OpenFreeMap Positron to quiet paper so Energy pins pop. */
 export function applyPaperTheme(map: MapLibreMap): void {
   const set = (layer: string, prop: string, value: unknown) => {
     if (!map.getLayer(layer)) return
@@ -16,34 +17,34 @@ export function applyPaperTheme(map: MapLibreMap): void {
     }
   }
 
-  set('background', 'background-color', '#f4efe6')
-  set('park', 'fill-color', '#dce6db')
-  set('water', 'fill-color', '#c5d9e4')
-  set('waterway', 'line-color', '#a9c2d0')
-  set('landcover_ice_shelf', 'fill-color', '#eef3f0')
-  set('landcover_glacier', 'fill-color', '#e7eeea')
-  set('landuse_residential', 'fill-color', '#efe7d9')
-  set('landcover_wood', 'fill-color', '#cfdcd4')
-  set('building', 'fill-color', '#e9e2d6')
-  set('building', 'fill-outline-color', '#ddd4c6')
-  set('road_area_pier', 'fill-color', '#f4efe6')
-  set('road_pier', 'line-color', '#f4efe6')
-  set('highway_path', 'line-color', '#e8e0d3')
-  set('highway_minor', 'line-color', '#e9e1d4')
-  set('highway_major_casing', 'line-color', '#e0d7c9')
-  set('highway_major_inner', 'line-color', '#fbf8f2')
-  set('highway_major_subtle', 'line-color', '#e6ddd0')
-  set('highway_motorway_casing', 'line-color', '#d8d0c3')
-  set('highway_motorway_inner', 'line-color', '#f3ece1')
-  set('highway_motorway_subtle', 'line-color', '#ddd4c6')
-  set('highway_motorway_bridge_casing', 'line-color', '#d8d0c3')
-  set('highway_motorway_bridge_inner', 'line-color', '#f3ece1')
-  set('railway', 'line-color', '#ddd4c6')
-  set('railway_transit', 'line-color', '#e2dacd')
-  set('railway_service', 'line-color', '#e2dacd')
-  set('boundary_2', 'line-color', '#cfc6b8')
-  set('boundary_3', 'line-color', '#d9d0c2')
-  set('boundary_disputed', 'line-color', '#d4cbbd')
+  set('background', 'background-color', tokens.paper)
+  set('park', 'fill-color', '#e8ebe6')
+  set('water', 'fill-color', '#e0e4e6')
+  set('waterway', 'line-color', '#cdd3d6')
+  set('landcover_ice_shelf', 'fill-color', '#f3f1ee')
+  set('landcover_glacier', 'fill-color', '#eeeae4')
+  set('landuse_residential', 'fill-color', tokens.paperDeep)
+  set('landcover_wood', 'fill-color', '#e3e6e1')
+  set('building', 'fill-color', '#ebe8e2')
+  set('building', 'fill-outline-color', tokens.line)
+  set('road_area_pier', 'fill-color', tokens.paper)
+  set('road_pier', 'line-color', tokens.paper)
+  set('highway_path', 'line-color', '#e8e5df')
+  set('highway_minor', 'line-color', '#e9e6e0')
+  set('highway_major_casing', 'line-color', tokens.line)
+  set('highway_major_inner', 'line-color', tokens.white)
+  set('highway_major_subtle', 'line-color', '#e6e3dd')
+  set('highway_motorway_casing', 'line-color', '#ddd9d2')
+  set('highway_motorway_inner', 'line-color', '#f3f1ec')
+  set('highway_motorway_subtle', 'line-color', '#e2ded7')
+  set('highway_motorway_bridge_casing', 'line-color', '#ddd9d2')
+  set('highway_motorway_bridge_inner', 'line-color', '#f3f1ec')
+  set('railway', 'line-color', tokens.line)
+  set('railway_transit', 'line-color', '#e2ded7')
+  set('railway_service', 'line-color', '#e2ded7')
+  set('boundary_2', 'line-color', '#d0ccc4')
+  set('boundary_3', 'line-color', '#dcd8d1')
+  set('boundary_disputed', 'line-color', '#d4d0c8')
 
   const labelLayers = [
     'waterway_line_label',
@@ -64,11 +65,11 @@ export function applyPaperTheme(map: MapLibreMap): void {
     'label_country_1',
   ]
   for (const id of labelLayers) {
-    set(id, 'text-color', '#5a534b')
-    set(id, 'text-halo-color', '#fbf8f2')
+    set(id, 'text-color', tokens.inkFaint)
+    set(id, 'text-halo-color', tokens.paper)
   }
-  set('water_name_point_label', 'text-color', '#3e6574')
-  set('water_name_line_label', 'text-color', '#3e6574')
+  set('water_name_point_label', 'text-color', tokens.inkFaint)
+  set('water_name_line_label', 'text-color', tokens.inkFaint)
 }
 
 export function addStateLayers(map: MapLibreMap): void {
@@ -90,8 +91,8 @@ export function addStateLayers(map: MapLibreMap): void {
       source: 'us-states',
       maxzoom: 5.8,
       paint: {
-        'fill-color': '#9fbe99',
-        'fill-opacity': 0.1,
+        'fill-color': tokens.energy,
+        'fill-opacity': 0.05,
       },
     },
     before,
@@ -104,9 +105,9 @@ export function addStateLayers(map: MapLibreMap): void {
       source: 'us-states',
       maxzoom: 6.2,
       paint: {
-        'line-color': '#3d6d62',
-        'line-width': 0.65,
-        'line-opacity': 0.32,
+        'line-color': tokens.calm,
+        'line-width': 0.7,
+        'line-opacity': 0.22,
       },
     },
     before,
@@ -119,8 +120,8 @@ export function addStateLayers(map: MapLibreMap): void {
       source: 'us-states',
       maxzoom: 5.8,
       paint: {
-        'fill-color': '#b7d3e3',
-        'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.24, 0],
+        'fill-color': tokens.calm,
+        'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.12, 0],
       },
     },
     'state-line',

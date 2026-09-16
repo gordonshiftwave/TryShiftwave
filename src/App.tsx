@@ -259,8 +259,8 @@ export function App() {
 function LiveListBanner() {
   return (
     <div className="live-banner">
-      <p className="mx-auto flex max-w-[1180px] items-start gap-2.5 px-5 py-2 text-[0.8rem] leading-snug text-ink-soft sm:gap-3 sm:py-2.5 sm:text-sm md:px-8">
-        <span className="mt-1 inline-block h-2 w-2 shrink-0 rounded-full bg-rise-deep" />
+      <p className="mx-auto flex max-w-[1100px] items-start gap-2.5 px-5 py-2 text-[0.8rem] leading-snug text-ink-soft sm:gap-3 sm:py-2.5 sm:text-sm md:px-8">
+        <span className="mt-1 inline-block h-2 w-2 shrink-0 rounded-full bg-energy" />
         <span>
           <strong className="font-semibold text-ink">Live partner list.</strong> Qualified public
           try-spots from the partner sheet. Hours may require a call. Some pins are city-level until
@@ -297,9 +297,9 @@ function LandingView({
   return (
     <div className="hero-wash flex min-h-[calc(100dvh-3.25rem)] flex-col">
       <main className="mx-auto flex w-full max-w-[46rem] flex-1 flex-col items-center justify-center px-5 py-14 text-center sm:py-20 md:py-24">
-        <WaveMark className="h-7 w-16 text-rise-deep" title="Shiftwave line-wave mark" />
-        <h1 className="mt-7 font-display text-[2.2rem] leading-[1.08] font-medium tracking-tight text-ink sm:text-5xl md:text-[3.35rem]">
-          Where Can I <em className="font-medium italic">Try</em> Shiftwave?
+        <WaveMark className="h-7 w-16 text-energy" title="Shiftwave line-wave mark" />
+        <h1 className="mt-7 font-display text-[2.2rem] font-semibold leading-[1.3] tracking-normal text-ink sm:text-5xl md:text-[3.35rem]">
+          Where Can I <em className="font-semibold italic">Try</em> Shiftwave?
         </h1>
         <p className="mt-4 max-w-md text-[1.05rem] leading-relaxed text-ink-soft sm:max-w-lg sm:text-lg">
           Find a public try-spot near you — full-body pulsed pressure and guided breathwork.
@@ -318,7 +318,7 @@ function LandingView({
         </div>
 
         {(error || geoNote || loadFailed) && (
-          <p className="mt-5 max-w-md text-sm text-fall-deep" role="status">
+            <p className="mt-5 max-w-md text-sm text-ink-soft" role="status">
             {error ||
               geoNote ||
               'Locations didn’t load. Check that locations.json is present, or that VITE_LOCATIONS_URL points at the live sheet export.'}
@@ -391,24 +391,24 @@ function ResultsView({
   return (
     <>
       <header className="results-chrome">
-        <div className="mx-auto flex max-w-[1180px] flex-col gap-3 px-5 py-3 md:px-8">
+        <div className="mx-auto flex max-w-[1100px] flex-col gap-3 px-5 py-3 md:px-8">
           <div className="flex items-center justify-between gap-3">
             <button
               type="button"
-              className="focus-ring flex min-w-0 items-center gap-2.5 rounded-full text-left text-rise-deep"
+              className="focus-ring flex min-w-0 items-center gap-2.5 rounded-full text-left text-energy"
               onClick={onReset}
             >
               <WaveMark className="h-5 w-12 shrink-0" title="Shiftwave line-wave mark" />
-              <span className="font-display text-[0.98rem] leading-snug font-medium tracking-tight text-ink sm:text-xl">
+              <span className="font-display text-[0.98rem] font-semibold leading-[1.3] tracking-normal text-ink sm:text-xl">
                 <span className="sm:hidden">Try Shiftwave</span>
                 <span className="hidden sm:inline">
-                  Where Can I <em className="font-medium italic">Try</em> Shiftwave?
+                  Where Can I <em className="font-semibold italic">Try</em> Shiftwave?
                 </span>
               </span>
             </button>
             <button
               type="button"
-              className="focus-ring shrink-0 rounded-full border border-line bg-cream px-3 py-1.5 text-sm text-ink-soft hover:bg-sand"
+              className="focus-ring shrink-0 rounded-full border border-line bg-cream px-3 py-1.5 text-sm text-ink-soft hover:bg-paper-deep"
               onClick={onReset}
             >
               New search
@@ -426,10 +426,10 @@ function ResultsView({
         </div>
       </header>
 
-      <main className="reveal mx-auto grid max-w-[1180px] gap-5 overflow-x-hidden px-4 py-5 sm:px-5 sm:py-6 md:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] md:items-start md:gap-7 md:px-8 md:py-8 lg:gap-8">
+      <main className="reveal mx-auto grid max-w-[1100px] gap-5 overflow-x-hidden px-4 py-5 sm:px-5 sm:py-6 md:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] md:items-start md:gap-7 md:px-8 md:py-8 lg:gap-8">
         <section id="results" className="order-2 min-w-0 md:order-1">
           <div className="mb-4 sm:mb-5">
-            <h2 className="font-display text-[1.45rem] leading-tight font-medium text-ink sm:text-[1.7rem]">
+            <h2 className="font-display text-[1.45rem] font-semibold leading-[1.3] tracking-normal text-ink sm:text-[1.7rem]">
               {resultLabel}
             </h2>
             <div className="mt-3 flex flex-wrap items-center gap-1.5">
@@ -449,7 +449,7 @@ function ResultsView({
           </div>
 
           {(error || geoNote) && (
-            <p className="mb-4 text-sm text-fall-deep" role="status">
+            <p className="mb-4 text-sm text-ink-soft" role="status">
               {error || geoNote}
             </p>
           )}
@@ -509,7 +509,7 @@ function ResultsView({
       </main>
 
       <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-[1180px] flex-col gap-2 px-5 py-8 text-sm text-ink-faint md:flex-row md:items-center md:justify-between md:px-8">
+        <div className="mx-auto flex max-w-[1100px] flex-col gap-2 px-5 py-8 text-sm text-ink-faint md:flex-row md:items-center md:justify-between md:px-8">
           <p>Pins are qualified public try-spots only — not every purchaser.</p>
           <p>
             Map {origin ? `centered on ${origin.label}` : 'of the United States'} · {ranked.length} listed

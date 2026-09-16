@@ -36,7 +36,7 @@ Geocoding uses Zippopotam.us (US ZIP codes) with OpenStreetMap Nominatim / Photo
 - Empty / no-nearby state shows the closest qualified try-spots
 - Mobile-first layout; `prefers-reduced-motion` disables fly/fit animation and the results reveal
 
-Brand tokens follow Stethoscope Design (paper / cream / sand surfaces, Fraunces + Source Sans 3). Color science and the Google-like search pattern are documented in [`DESIGN.md`](DESIGN.md). Shiftwave marketing chrome (dark UI, orange `#E43A00`, purple `#3911AC`) is intentionally not used.
+Brand tokens match [shiftwave.co](https://shiftwave.co/) for merge — Montserrat 500/600, ink `#3C3B3B`, paper `#F7F4EF` / white, black Search CTA. Brand Guide orange `#E43A00` and purple `#3911AC` are pin/highlight accents only. The Fraunces listening-surface stack is Stethoscope/Wave only. See [`DESIGN.md`](DESIGN.md).
 
 ## Data module
 
