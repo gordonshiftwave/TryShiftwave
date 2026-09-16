@@ -259,7 +259,7 @@ export function App() {
 function LiveListBanner() {
   return (
     <div className="live-banner">
-      <p className="mx-auto max-w-[1180px] px-5 py-2.5 md:px-8">
+      <p className="mx-auto max-w-[1100px] px-5 py-2.5 md:px-8">
         <strong>Live partner list.</strong> Qualified public try-spots from the partner sheet.
         Hours may require a call. Some pins are city-level until a street address is added.
       </p>
@@ -387,7 +387,7 @@ function ResultsView({
   return (
     <>
       <header className="results-chrome">
-        <div className="mx-auto flex max-w-[1180px] flex-col gap-3 px-5 py-3 md:px-8">
+        <div className="mx-auto flex max-w-[1100px] flex-col gap-3 px-5 py-3 md:px-8">
           <div className="flex items-center justify-between gap-3">
             <button
               type="button"
@@ -419,7 +419,7 @@ function ResultsView({
         </div>
       </header>
 
-      <main className="reveal mx-auto grid max-w-[1180px] gap-5 px-4 py-5 sm:px-5 sm:py-6 md:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] md:items-start md:gap-7 md:px-8 md:py-8 lg:gap-8">
+      <main className="reveal mx-auto grid max-w-[1100px] gap-5 px-4 py-5 sm:px-5 sm:py-6 md:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] md:items-start md:gap-7 md:px-8 md:py-8 lg:gap-8">
         <section id="results" className="order-2 md:order-1">
           <div className="mb-4 sm:mb-5">
             <h2 className="font-display text-[1.45rem] font-semibold leading-[1.3] tracking-normal text-ink sm:text-[1.7rem]">
@@ -502,7 +502,7 @@ function ResultsView({
       </main>
 
       <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-[1180px] flex-col gap-2 px-5 py-8 text-sm text-ink-faint md:flex-row md:items-center md:justify-between md:px-8">
+        <div className="mx-auto flex max-w-[1100px] flex-col gap-2 px-5 py-8 text-sm text-ink-faint md:flex-row md:items-center md:justify-between md:px-8">
           <p>Pins are qualified public try-spots only — not every purchaser.</p>
           <p>
             Map {origin ? `centered on ${origin.label}` : 'of the United States'} · {ranked.length} listed

@@ -10,13 +10,15 @@
 */
 @theme {
   --color-paper: #f7f5f2;
-  --color-paper-deep: #efece7;
+  --color-paper-deep: #f7f4ef;
+  --color-fog: #fafafa;
   --color-cream: #ffffff;
-  --color-sand: #f7f5f2;
+  --color-sand: #f7f4ef;
   --color-line: #e8e4de;
   --color-ink: #3c3b3b;
   --color-ink-soft: #5c5b5b;
   --color-ink-faint: #8a8888;
+  --color-charcoal: #282828;
   --color-cta: #111111;
   --color-peach: #ffddbf;
   --color-peach-warm: #e0a580;
@@ -26,13 +28,16 @@
   --color-energy-tint: #fdece6;
   --color-calm: #3911ac;
   --color-calm-tint: #ede8f8;
+  --color-indigo: #4a4af4;
+  --color-indigo-soft: #a8a9fc;
+  --color-indigo-deep: #2f2fc1;
   --color-positive: #0f8a3c;
   --color-positive-tint: #e4f5ea;
   --color-focus: #0b61cd;
   --font-sans: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
   --font-display: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
   --font-body: 'Montserrat', ui-sans-serif, system-ui, sans-serif;
-  --radius-card: 24px;
+  --radius-card: 18px;
 }
 
 :root {
@@ -60,7 +65,9 @@ body {
   margin: 0;
   color: var(--color-ink);
   font-family: var(--font-body);
+  font-size: 16px;
   font-weight: 500;
+  line-height: 1.5;
   letter-spacing: -0.005em;
   background-color: var(--color-paper);
   -webkit-font-smoothing: antialiased;
@@ -506,7 +513,7 @@ textarea {
 }
 
 .map-shell .maplibregl-canvas {
-  border-radius: 22px;
+  border-radius: 16px;
 }
 
 .maplibregl-cooperative-gesture-screen {

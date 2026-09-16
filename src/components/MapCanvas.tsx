@@ -190,7 +190,7 @@ export function MapCanvas({
 
   return (
     <div className="map-shell paper-card relative h-full min-h-[240px] overflow-hidden p-1.5 md:min-h-[480px]">
-      <div ref={containerRef} className="h-full min-h-[228px] overflow-hidden rounded-[22px] md:min-h-[468px]" />
+      <div ref={containerRef} className="h-full min-h-[228px] overflow-hidden rounded-[16px] md:min-h-[468px]" />
     </div>
   )
 }
