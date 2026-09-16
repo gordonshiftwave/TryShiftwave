@@ -18,9 +18,9 @@ export const tokens = {
   peachWarm: '#E0A580',
   peachDeep: '#C4845E',
   peachTint: '#FFF6EE',
-  energy: '#E43A00',
+  energy: '#E43A00', // Brand Guide Energy — pins / wave / hover only
   energyTint: '#FDECE6',
-  calm: '#3911AC',
+  calm: '#3911AC', // Brand Guide Calm — selected pin / row only
   calmTint: '#EDE8F8',
   indigo: '#4A4AF4',
   indigoSoft: '#A8A9FC',

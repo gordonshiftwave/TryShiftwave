@@ -6,7 +6,8 @@
   - Montserrat 500 body / 600 headings. No Fraunces / Source Sans 3.
   - Paper / white ground, ink #3C3B3B, peach highlight washes.
   - Black Search CTA (site primary). Keyboard focus #0B61CD.
-  - Accents, sparingly: Energy #E43A00 (pins), Calm #3911AC (selected).
+  - Accents, sparingly: Energy #E43A00 (pins, wave), Calm #3911AC (selected).
+  - Search CTA stays black (shiftwave.co primary). No Fraunces / full-page orange/purple.
 */
 @theme {
   --color-paper: #f7f5f2;
