@@ -36,7 +36,7 @@ Geocoding uses Zippopotam.us (US ZIP codes) with OpenStreetMap Nominatim / Photo
 - Empty / no-nearby state shows the closest qualified try-spots
 - Mobile-first layout; `prefers-reduced-motion` disables fly/fit animation and the results reveal
 
-Brand tokens and color science are documented in [`DESIGN.md`](DESIGN.md): paper ground, aqua→violet accents, Fraunces + Source Sans 3. Shiftwave marketing chrome (dark UI, orange `#E43A00`, purple `#3911AC`) is intentionally not used.
+Brand tokens match [shiftwave.co](https://shiftwave.co/) for merge — Montserrat 500/600, ink `#3C3B3B`, paper `#F7F5F2` / white, peach highlights, black Search CTA. See [`DESIGN.md`](DESIGN.md). Logo orange `#E43A00` and purple `#3911AC` are not full-page chrome.
 
 ## Data module
 

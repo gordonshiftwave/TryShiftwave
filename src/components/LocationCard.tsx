@@ -36,7 +36,7 @@ export function LocationCard({ place, active, nearest = false, onSelect, onHover
       <div className="flex items-start justify-between gap-3 sm:gap-5">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h3 className="font-display text-[1.05rem] leading-[1.2] font-medium tracking-tight text-ink sm:text-[1.18rem]">
+            <h3 className="font-display text-[1.05rem] font-semibold leading-[1.3] tracking-normal text-ink sm:text-[1.18rem]">
               {place.name}
             </h3>
             {nearest && <span className="nearest-mark">Nearest</span>}
@@ -57,7 +57,7 @@ export function LocationCard({ place, active, nearest = false, onSelect, onHover
             <dt className="sr-only">Address</dt>
             <dd>
               <a
-                className="focus-ring rounded-sm underline decoration-line underline-offset-4 hover:text-aqua-deep"
+                className="focus-ring rounded-sm underline decoration-line underline-offset-4 hover:text-peach-deep"
                 href={mapsUrl(place)}
                 target="_blank"
                 rel="noreferrer"
@@ -79,7 +79,7 @@ export function LocationCard({ place, active, nearest = false, onSelect, onHover
             {place.phone && (
               <dd>
                 <a
-                  className="focus-ring rounded-sm hover:text-aqua-deep"
+                  className="focus-ring rounded-sm hover:text-peach-deep"
                   href={`tel:${place.phone.replace(/[^\d+]/g, '')}`}
                   onClick={(event) => event.stopPropagation()}
                 >
@@ -90,7 +90,7 @@ export function LocationCard({ place, active, nearest = false, onSelect, onHover
             {place.email && (
               <dd>
                 <a
-                  className="focus-ring rounded-sm hover:text-aqua-deep"
+                  className="focus-ring rounded-sm hover:text-peach-deep"
                   href={`mailto:${place.email}`}
                   onClick={(event) => event.stopPropagation()}
                 >

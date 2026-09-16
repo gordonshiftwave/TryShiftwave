@@ -1,7 +1,7 @@
 import type { LngLatBoundsLike, Map as MapLibreMap } from 'maplibre-gl'
 import { tokens } from '../theme/tokens'
 
-/** Recolor OpenFreeMap Positron to a quiet paper basemap so aqua/violet pins pop. */
+/** Recolor OpenFreeMap Positron to a quiet paper basemap so peach-warm pins pop. */
 export function applyPaperTheme(map: MapLibreMap): void {
   const set = (layer: string, prop: string, value: unknown) => {
     if (!map.getLayer(layer)) return
@@ -18,13 +18,13 @@ export function applyPaperTheme(map: MapLibreMap): void {
   }
 
   set('background', 'background-color', tokens.paper)
-  set('park', 'fill-color', '#e4ebe6')
-  set('water', 'fill-color', '#d5e8e9')
-  set('waterway', 'line-color', '#b9d4d6')
-  set('landcover_ice_shelf', 'fill-color', '#eef3f0')
-  set('landcover_glacier', 'fill-color', '#e7eeea')
+  set('park', 'fill-color', '#e8ebe6')
+  set('water', 'fill-color', '#e0e4e6')
+  set('waterway', 'line-color', '#cdd3d6')
+  set('landcover_ice_shelf', 'fill-color', '#f3f1ee')
+  set('landcover_glacier', 'fill-color', '#eeeae4')
   set('landuse_residential', 'fill-color', tokens.paperDeep)
-  set('landcover_wood', 'fill-color', '#dde6e1')
+  set('landcover_wood', 'fill-color', '#e3e6e1')
   set('building', 'fill-color', '#ebe8e2')
   set('building', 'fill-outline-color', tokens.line)
   set('road_area_pier', 'fill-color', tokens.paper)
@@ -68,8 +68,8 @@ export function applyPaperTheme(map: MapLibreMap): void {
     set(id, 'text-color', tokens.inkFaint)
     set(id, 'text-halo-color', tokens.paper)
   }
-  set('water_name_point_label', 'text-color', tokens.aquaDeep)
-  set('water_name_line_label', 'text-color', tokens.aquaDeep)
+  set('water_name_point_label', 'text-color', tokens.inkFaint)
+  set('water_name_line_label', 'text-color', tokens.inkFaint)
 }
 
 export function addStateLayers(map: MapLibreMap): void {
@@ -91,8 +91,8 @@ export function addStateLayers(map: MapLibreMap): void {
       source: 'us-states',
       maxzoom: 5.8,
       paint: {
-        'fill-color': tokens.aqua,
-        'fill-opacity': 0.06,
+        'fill-color': tokens.peachWarm,
+        'fill-opacity': 0.08,
       },
     },
     before,
@@ -105,7 +105,7 @@ export function addStateLayers(map: MapLibreMap): void {
       source: 'us-states',
       maxzoom: 6.2,
       paint: {
-        'line-color': tokens.aquaDeep,
+        'line-color': tokens.peachDeep,
         'line-width': 0.7,
         'line-opacity': 0.28,
       },
@@ -120,7 +120,7 @@ export function addStateLayers(map: MapLibreMap): void {
       source: 'us-states',
       maxzoom: 5.8,
       paint: {
-        'fill-color': tokens.violet,
+        'fill-color': tokens.peachWarm,
         'fill-opacity': ['case', ['boolean', ['feature-state', 'hover'], false], 0.14, 0],
       },
     },

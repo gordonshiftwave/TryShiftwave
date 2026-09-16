@@ -1,25 +1,24 @@
 /**
  * Canonical product colors. Keep in sync with `src/index.css` `@theme` and DESIGN.md.
+ * Values match live shiftwave.co theme vars so this finder can merge into that site.
  * MapLibre paint and SVG pin fills cannot read CSS variables, so they import from here.
  */
 export const tokens = {
-  paper: '#f6f5f2',
-  paperDeep: '#f3f2ee',
-  white: '#ffffff',
-  line: '#e4e2dc',
-  ink: '#171a21',
-  inkSoft: '#4a5060',
-  inkFaint: '#7a8090',
-  aqua: '#0fa3a8',
-  aquaDeep: '#0b7f8d',
-  violet: '#6f5fe8',
-  aquaTint: '#e3f5f5',
-  violetTint: '#ebe8fb',
-  coral: '#e5563d',
-  orange: '#f39a5b',
-  positive: '#0f8a3c',
-  positiveTint: '#e4f5ea',
-  focus: '#0b7f8d',
+  paper: '#F7F5F2',
+  paperDeep: '#EFECE7',
+  white: '#FFFFFF',
+  line: '#E8E4DE',
+  ink: '#3C3B3B',
+  inkSoft: '#5C5B5B',
+  inkFaint: '#8A8888',
+  cta: '#111111',
+  peach: '#FFDDBF',
+  peachWarm: '#E0A580',
+  peachDeep: '#C4845E',
+  peachTint: '#FFF6EE',
+  positive: '#0F8A3C',
+  positiveTint: '#E4F5EA',
+  focus: '#0B61CD',
 } as const
 
 export type TokenName = keyof typeof tokens

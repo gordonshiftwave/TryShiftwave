@@ -293,9 +293,9 @@ function LandingView({
   return (
     <div className="hero-wash flex min-h-[calc(100dvh-2.75rem)] flex-col">
       <main className="mx-auto flex w-full max-w-[46rem] flex-1 flex-col items-center justify-center px-5 py-20 text-center sm:py-24 md:py-28">
-        <WaveMark className="h-7 w-16 text-aqua" title="Shiftwave line-wave mark" />
-        <h1 className="mt-7 font-display text-[2.5rem] leading-[1.06] font-medium tracking-tight text-ink sm:text-5xl md:text-[3.4rem]">
-          Where Can I <em className="font-medium italic">Try</em> Shiftwave?
+        <WaveMark className="h-7 w-16 text-peach-warm" title="Shiftwave line-wave mark" />
+        <h1 className="mt-7 font-display text-[2.5rem] font-semibold leading-[1.3] tracking-normal text-ink sm:text-5xl md:text-[3.4rem]">
+          Where Can I <em className="font-semibold italic">Try</em> Shiftwave?
         </h1>
         <p className="mt-5 max-w-lg text-lg leading-relaxed text-ink-soft">
           Find a public try-spot near you — full-body pulsed pressure and guided breathwork.
@@ -391,12 +391,12 @@ function ResultsView({
           <div className="flex items-center justify-between gap-3">
             <button
               type="button"
-              className="focus-ring flex min-w-0 items-center gap-2.5 rounded-full text-left text-aqua"
+              className="focus-ring flex min-w-0 items-center gap-2.5 rounded-full text-left text-peach-warm"
               onClick={onReset}
             >
               <WaveMark className="h-5 w-12 shrink-0" title="Shiftwave line-wave mark" />
-              <span className="font-display text-[0.98rem] leading-snug font-medium tracking-tight text-ink sm:text-xl">
-                Where Can I <em className="font-medium italic">Try</em> Shiftwave?
+              <span className="font-display text-[0.98rem] font-semibold leading-[1.3] tracking-normal text-ink sm:text-xl">
+                Where Can I <em className="font-semibold italic">Try</em> Shiftwave?
               </span>
             </button>
             <button
@@ -422,7 +422,7 @@ function ResultsView({
       <main className="reveal mx-auto grid max-w-[1180px] gap-5 px-4 py-5 sm:px-5 sm:py-6 md:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] md:items-start md:gap-7 md:px-8 md:py-8 lg:gap-8">
         <section id="results" className="order-2 md:order-1">
           <div className="mb-4 sm:mb-5">
-            <h2 className="font-display text-[1.45rem] leading-tight font-medium text-ink sm:text-[1.7rem]">
+            <h2 className="font-display text-[1.45rem] font-semibold leading-[1.3] tracking-normal text-ink sm:text-[1.7rem]">
               {resultLabel}
             </h2>
             <div className="mt-3 flex flex-wrap items-center gap-1.5">
