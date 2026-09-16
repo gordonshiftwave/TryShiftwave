@@ -1,8 +1,8 @@
-import { CATEGORY_LABEL, type RankedLocation } from '../types'
+import { categoryLabel, pinKind, type LocationCategory, type RankedLocation } from '../types'
 import { formatAddress, mapsUrl } from '../data/parse'
 import { formatMiles } from '../geo/distance'
 
-const PIN_COLOR: Record<RankedLocation['category'], string> = {
+const PIN_COLOR: Record<LocationCategory, string> = {
   clinic: 'bg-sky',
   gym: 'bg-coral',
   wellness: 'bg-sage',
@@ -45,9 +45,9 @@ export function LocationCard({ place, active, onSelect, onHover }: LocationCardP
             {place.name}
           </h3>
           <p className="mt-1 flex items-center gap-2 text-[0.95rem] text-ink-faint">
-            <span className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${PIN_COLOR[place.category]}`} />
+            <span className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${PIN_COLOR[pinKind(place.category)]}`} />
             <span>
-              {CATEGORY_LABEL[place.category]}
+              {categoryLabel(place.category)}
               {place.region ? ` · ${place.region}` : ''}
             </span>
           </p>

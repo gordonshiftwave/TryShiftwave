@@ -1,4 +1,5 @@
-import type { LocationCategory, LocationRecord } from '../types'
+import type { LocationRecord } from '../types'
+import { normalizeState, stateName } from '../geo/states'
 
 /**
  * Canonical field names for a location row.
@@ -11,6 +12,7 @@ export const LOCATION_FIELDS = [
   'id',
   'name',
   'street',
+  'address',
   'city',
   'state',
   'zip',
@@ -39,7 +41,7 @@ const KEY_ALIASES: Record<string, LocationField> = {
   business_name: 'name',
   location_name: 'name',
   street: 'street',
-  address: 'street',
+  address: 'address',
   address1: 'street',
   street_address: 'street',
   city: 'city',
@@ -83,6 +85,7 @@ const KEY_ALIASES: Record<string, LocationField> = {
   walk_in_appropriate: 'walk_in_ok',
   notes: 'notes',
   note: 'notes',
+  address_note: 'notes',
 }
 
 export function normalizeKey(raw: string): string {
@@ -108,12 +111,8 @@ function num(value: unknown): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-function categoryOf(value: unknown): LocationCategory {
-  const s = str(value).toLowerCase()
-  if (s === 'clinic' || s === 'pt' || s === 'physical_therapy') return 'clinic'
-  if (s === 'gym' || s === 'fitness') return 'gym'
-  if (s === 'studio') return 'studio'
-  return 'wellness'
+function categoryOf(value: unknown): string {
+  return str(value)
 }
 
 export function isPublicQualified(row: LocationRecord): boolean {
@@ -137,14 +136,18 @@ export function parseRow(
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null
 
   const id = str(src.id) || slug(`${name}-${index}`)
+  const city = str(src.city)
+  const state = normalizeState(str(src.state))
+  const zip = str(src.zip)
+  const street = streetLine(str(src.street), str(src.address), city, state, zip)
 
   return {
     id,
     name,
-    street: str(src.street),
-    city: str(src.city),
-    state: str(src.state).toUpperCase(),
-    zip: str(src.zip),
+    street,
+    city,
+    state,
+    zip,
     lat,
     lng,
     phone: str(src.phone),
@@ -235,15 +238,52 @@ function parseCsvRows(text: string): string[][] {
   return rows
 }
 
+function streetLine(
+  street: string,
+  address: string,
+  city: string,
+  state: string,
+  zip: string,
+): string {
+  if (street && !isCityLevelAddress(street, city, state, zip)) return street
+  if (address && !isCityLevelAddress(address, city, state, zip)) return address
+  return ''
+}
+
+function compact(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, '')
+}
+
+/** True when the line is only city / state / ZIP — not a street address. */
+function isCityLevelAddress(line: string, city: string, state: string, zip: string): boolean {
+  const a = compact(line)
+  if (!a) return true
+  const abbr = normalizeState(state)
+  const full = stateName(state)
+  const variants = [
+    [city, state, zip],
+    [city, abbr, zip],
+    [city, full, zip],
+    [city, state],
+    [city, abbr],
+    [city, full],
+    [full, zip],
+    [abbr, zip],
+    [full],
+    [abbr],
+  ]
+  return variants.some((parts) => compact(parts.filter(Boolean).join(' ')) === a)
+}
+
 export function formatAddress(place: LocationRecord): string {
-  const line = [place.street, [place.city, place.state].filter(Boolean).join(', '), place.zip]
-    .filter(Boolean)
-    .join(', ')
-    .replace(',,', ',')
-  return line
+  const stateLabel = place.city ? place.state : stateName(place.state)
+  const cityState = [place.city, stateLabel].filter(Boolean).join(', ')
+  const locality = place.zip ? (cityState ? `${cityState} ${place.zip}` : place.zip) : cityState
+  return [place.street, locality].filter(Boolean).join(', ')
 }
 
 export function mapsUrl(place: LocationRecord): string {
-  const q = formatAddress(place) || `${place.lat},${place.lng}`
+  const addr = formatAddress(place)
+  const q = [place.name, addr].filter(Boolean).join(', ') || `${place.lat},${place.lng}`
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`
 }

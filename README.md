@@ -2,9 +2,9 @@
 
 Public map for finding a nearby place to **try Shiftwave** — full-body pulsed pressure and guided breathwork. This is a standalone web app (search + map) meant to ship before it is embedded on shiftwave.co.
 
-The live partner list is still in a Google Sheet. This repo ships with **example** locations so the product can be designed, shared, and wired to the sheet without blocking on Shopify, HubSpot, or auth.
+[`public/locations.json`](public/locations.json) is a **static snapshot** of qualified partners from Dani’s *Shiftwave Clinic & Commercial List* (rows where “Can we send people there to Demo?” = YES). No Shopify, no Google write access, and no secrets. To refresh, export the sheet and replace that file (or point `VITE_LOCATIONS_URL` at a CORS-enabled JSON/CSV feed).
 
-> Demo data — not the live partner list. Only **qualified** public demo locations should ever appear on the map (public-facing, demo consent, walk-in appropriate). Ambassadors, pop-ups, booking, and heat maps are out of scope here.
+> Live partner list. Only **qualified** public try-spots appear on the map (public-facing, demo consent, walk-in appropriate). The sheet has no street-address column and no hours column — pins are city/ZIP, and hours are “Call for hours.” Ambassadors, pop-ups, booking, and heat maps are out of scope here.
 
 ## Run locally
 
@@ -33,7 +33,7 @@ Geocoding uses Zippopotam.us (US ZIP codes) with OpenStreetMap Nominatim / Photo
 - **Use my location**, with a clear fallback if permission is denied or the page is not HTTPS
 - Results as a simple list with distance; pins synced to the list; state click-to-zoom at national zoom
 - Each place: name, distance (mi), address (Google Maps link), hours, phone and/or email
-- Empty / no-nearby state shows the closest qualified examples
+- Empty / no-nearby state shows the closest qualified try-spots
 - Mobile-first layout; `prefers-reduced-motion` disables fly/fit animation and the results reveal
 
 Brand tokens follow Stethoscope Design (paper / cream / sand surfaces, Fraunces + Source Sans 3). Shiftwave marketing chrome (dark UI, orange `#E43A00`, purple `#3911AC`) is intentionally not used.
@@ -42,17 +42,17 @@ Brand tokens follow Stethoscope Design (paper / cream / sand surfaces, Fraunces 
 
 Runtime file: [`public/locations.json`](public/locations.json)
 
-The loader lives in `src/data/`. It already accepts **JSON or CSV** with the same field names, so a sheet export can replace the example file with one environment variable.
+The loader lives in `src/data/`. It accepts **JSON or CSV**. Field names from the sheet (`address` instead of `street`, full state names, free-form categories) are mapped in `parse.ts`. Street lines and hours are **not invented** — empty street stays empty; hours stay “Call for hours” until the sheet has them.
 
-### Point the app at the live sheet
+### Refresh from the sheet later
 
-1. Keep the qualification columns on the sheet (do not publish unqualified buyers).
-2. Set `VITE_LOCATIONS_URL` at build time to a CORS-enabled feed.
+1. Keep the qualification columns (do not publish unqualified buyers).
+2. Export JSON or CSV and replace `public/locations.json`, **or** set `VITE_LOCATIONS_URL` at build time to a CORS-enabled feed.
 
 Examples:
 
 ```bash
-# Default — example JSON in this repo
+# Default — committed snapshot in this repo
 VITE_LOCATIONS_URL=/locations.json
 
 # CSV sitting next to the app (export from Google Sheets → File → Download → CSV)
@@ -63,7 +63,7 @@ VITE_LOCATIONS_URL=/locations.csv
 VITE_LOCATIONS_URL=https://opensheet.elk.sh/SPREADSHEET_ID/Locations
 ```
 
-Create a `.env` (see `.env.example`) and rebuild. Google’s raw `/export?format=csv` URLs often **fail CORS** in the browser; prefer a committed CSV, Opensheet, or a tiny Apps Script web app that returns JSON with `Access-Control-Allow-Origin`.
+Create a `.env` (see `.env.example`) and rebuild. Google’s raw `/export?format=csv` URLs often **fail CORS** in the browser; prefer a committed JSON/CSV snapshot, Opensheet, or a tiny Apps Script web app that returns JSON with `Access-Control-Allow-Origin`.
 
 ### Expected field names
 
@@ -73,17 +73,17 @@ Header row of the Google Sheet should use these names (snake_case). Aliases such
 | --- | --- | --- |
 | `id` | unique string | Stable slug; generated from name if blank |
 | `name` | yes | Public business name |
-| `street` | yes | Street line |
-| `city` | yes | |
-| `state` | yes | Two-letter USPS code preferred (`CA`) |
-| `zip` | yes | 5-digit ZIP |
+| `street` | if known | Street line. Leave blank rather than inventing. `address` that is only “City, State ZIP” is not treated as a street. |
+| `city` | preferred | May be missing for a few rows |
+| `state` | yes | Full name or two-letter USPS code (`California` or `CA`) |
+| `zip` | preferred | 5-digit ZIP |
 | `lat` | yes | WGS84 latitude |
 | `lng` | yes | WGS84 longitude |
 | `phone` | if no email | Display + `tel:` link |
 | `email` | if no phone | Display + `mailto:` link |
-| `hours` | recommended | Single human-readable string, e.g. `Mon–Fri 8am–6pm · Sat 9am–2pm` |
+| `hours` | recommended | Single human-readable string. Snapshot uses `Call for hours`. |
 | `website` | optional | Reserved for later |
-| `category` | optional | `clinic` · `gym` · `wellness` · `studio` |
+| `category` | optional | Sheet label shown in the list (e.g. `Longevity / Wellness Center`) |
 | `region` | optional | Grouping label (`Bay Area`, `Central New Jersey`) |
 | `qualified` | yes | `TRUE` / `FALSE` |
 | `public_facing` | yes | Public business, not home use |
@@ -110,6 +110,7 @@ id,name,street,city,state,zip,lat,lng,phone,email,hours,website,category,region,
 - Ambassador network
 - Prospect heat maps
 - shiftwave.co embed
+- Live Google Sheet write-back (snapshot refresh is a file replace)
 
 ## Stack
 

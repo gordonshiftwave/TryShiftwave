@@ -13,7 +13,8 @@ export type LocationRecord = {
   email: string
   hours: string
   website: string
-  category: LocationCategory
+  /** Sheet category label (e.g. "Longevity / Wellness Center"). */
+  category: string
   region: string
   qualified: boolean
   publicFacing: boolean
@@ -39,11 +40,25 @@ export type RankedLocation = LocationRecord & {
   distanceMiles: number | null
 }
 
-export const CATEGORY_LABEL: Record<LocationCategory, string> = {
-  clinic: 'Clinic',
-  gym: 'Gym',
-  wellness: 'Wellness',
-  studio: 'Studio',
+/** Pin color bucket for a free-form sheet category. */
+export function pinKind(category: string): LocationCategory {
+  const s = category.trim().toLowerCase()
+  if (/(studio|pilates)/.test(s)) return 'studio'
+  if (/(gym|fitness|performance)/.test(s)) return 'gym'
+  if (
+    /(clinic|physical therapy|chiropract|primary care|psychiatr|medicine|ketamine|neurofeedback|brain health|orthodont|\bpt\b)/.test(
+      s,
+    )
+  ) {
+    return 'clinic'
+  }
+  return 'wellness'
+}
+
+export function categoryLabel(category: string): string {
+  const label = category.trim()
+  if (label) return label
+  return 'Try-spot'
 }
 
 export const NEARBY_RADIUS_OPTIONS = [25, 50, 100] as const

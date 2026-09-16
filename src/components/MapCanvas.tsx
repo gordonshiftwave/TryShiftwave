@@ -4,13 +4,13 @@ import { setWorkerUrl } from 'maplibre-gl'
 import type { Map as MapLibreMap, Marker } from 'maplibre-gl'
 import type { Feature, Polygon, MultiPolygon } from 'geojson'
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
-import { CONUS_BOUNDS, type Coord, type RankedLocation } from '../types'
+import { CONUS_BOUNDS, pinKind, type Coord, type LocationCategory, type RankedLocation } from '../types'
 import { prefersReducedMotion } from '../geo/distance'
 import { addStateLayers, applyPaperTheme, boundsFromPositions } from '../geo/mapStyle'
 
 setWorkerUrl(workerUrl.endsWith('.mjs') ? workerUrl : `${workerUrl}#.mjs`)
 
-const PIN_FILL: Record<RankedLocation['category'], string> = {
+const PIN_FILL: Record<LocationCategory, string> = {
   clinic: '#b7d3e3',
   gym: '#e4a894',
   wellness: '#9fbe99',
@@ -198,7 +198,7 @@ function pinElement(place: RankedLocation): HTMLButtonElement {
   button.type = 'button'
   button.className = 'sw-pin'
   button.setAttribute('aria-label', place.name)
-  const fill = PIN_FILL[place.category]
+  const fill = PIN_FILL[pinKind(place.category)]
   button.innerHTML = `<svg class="sw-pin__glyph" viewBox="0 0 28 28" aria-hidden="true">
     <path d="M14 2.5c-5.2 0-9.4 4.1-9.4 9.2 0 6.6 9.4 14 9.4 14s9.4-7.4 9.4-14c0-5.1-4.2-9.2-9.4-9.2z" fill="${fill}" stroke="#3d6d62" stroke-width="1.6"/>
     <circle cx="14" cy="11.2" r="3.15" fill="#fbf8f2"/>

@@ -8,6 +8,7 @@ import { loadLocations } from './data/load'
 import { formatAddress } from './data/parse'
 import { milesBetween, prefersReducedMotion } from './geo/distance'
 import { geocodeQuery, reverseGeocode } from './geo/geocode'
+import { statesMatch } from './geo/states'
 import {
   DEFAULT_RADIUS_MILES,
   NEARBY_RADIUS_OPTIONS,
@@ -208,7 +209,7 @@ export function App() {
         </a>
       )}
 
-      <DemoBanner />
+      <LiveListBanner />
 
       {showingResults ? (
         <ResultsView
@@ -255,15 +256,15 @@ export function App() {
   )
 }
 
-function DemoBanner() {
+function LiveListBanner() {
   return (
     <div className="border-b border-line bg-sand/80">
       <p className="mx-auto flex max-w-[1180px] items-start gap-3 px-5 py-2.5 text-sm text-ink-soft md:px-8">
-        <span className="mt-1 inline-block h-2 w-2 shrink-0 rounded-full bg-coral" />
+        <span className="mt-1 inline-block h-2 w-2 shrink-0 rounded-full bg-rise-deep" />
         <span>
-          <strong className="font-semibold text-ink">Demo data — not the live partner list.</strong>{' '}
-          Example spots so the map can be tried. Qualified live locations will replace these from
-          the partner sheet.
+          <strong className="font-semibold text-ink">Live partner list.</strong> Qualified public
+          try-spots from the partner sheet. Hours may require a call. Some pins are city-level until
+          a street address is added.
         </span>
       </p>
     </div>
@@ -326,7 +327,7 @@ function LandingView({
       </main>
 
       <footer className="px-5 py-6 text-center text-sm text-ink-faint">
-        Pins are qualified public demo locations only — not every purchaser.
+        Pins are qualified public try-spots only — not every purchaser.
       </footer>
     </div>
   )
@@ -465,7 +466,7 @@ function ResultsView({
             <div className="mb-4">
               <EmptyState
                 title="Nothing public nearby — yet"
-                body={`We don’t have a qualified walk-in try-spot within ${radius} miles of ${originLabel}. These are the closest example locations on the current demo list.`}
+                body={`We don’t have a qualified walk-in try-spot within ${radius} miles of ${originLabel}. These are the closest qualified locations on the live partner list.`}
               />
             </div>
           )}
@@ -477,7 +478,7 @@ function ResultsView({
             />
           )}
 
-          {emptyNearby && <p className="mb-2 text-sm font-medium text-ink-faint">Closest example locations</p>}
+          {emptyNearby && <p className="mb-2 text-sm font-medium text-ink-faint">Closest try-spots</p>}
 
           <ul className="place-list">
             {list.map((place) => (
@@ -508,7 +509,7 @@ function ResultsView({
 
       <footer className="border-t border-line">
         <div className="mx-auto flex max-w-[1180px] flex-col gap-2 px-5 py-8 text-sm text-ink-faint md:flex-row md:items-center md:justify-between md:px-8">
-          <p>Pins are qualified public demo locations only — not every purchaser.</p>
+          <p>Pins are qualified public try-spots only — not every purchaser.</p>
           <p>
             Map {origin ? `centered on ${origin.label}` : 'of the United States'} · {ranked.length} listed
           </p>
@@ -520,61 +521,6 @@ function ResultsView({
 
 function matchesState(place: LocationRecord, state?: string): boolean {
   if (!state) return false
-  const needle = state.trim().toLowerCase()
-  const abbr = place.state.toLowerCase()
-  const name = STATE_NAMES[place.state.toUpperCase()]?.toLowerCase()
-  return abbr === needle || name === needle || formatAddress(place).toLowerCase().includes(needle)
-}
-
-const STATE_NAMES: Record<string, string> = {
-  AL: 'Alabama',
-  AK: 'Alaska',
-  AZ: 'Arizona',
-  AR: 'Arkansas',
-  CA: 'California',
-  CO: 'Colorado',
-  CT: 'Connecticut',
-  DE: 'Delaware',
-  DC: 'District of Columbia',
-  FL: 'Florida',
-  GA: 'Georgia',
-  HI: 'Hawaii',
-  ID: 'Idaho',
-  IL: 'Illinois',
-  IN: 'Indiana',
-  IA: 'Iowa',
-  KS: 'Kansas',
-  KY: 'Kentucky',
-  LA: 'Louisiana',
-  ME: 'Maine',
-  MD: 'Maryland',
-  MA: 'Massachusetts',
-  MI: 'Michigan',
-  MN: 'Minnesota',
-  MS: 'Mississippi',
-  MO: 'Missouri',
-  MT: 'Montana',
-  NE: 'Nebraska',
-  NV: 'Nevada',
-  NH: 'New Hampshire',
-  NJ: 'New Jersey',
-  NM: 'New Mexico',
-  NY: 'New York',
-  NC: 'North Carolina',
-  ND: 'North Dakota',
-  OH: 'Ohio',
-  OK: 'Oklahoma',
-  PA: 'Pennsylvania',
-  RI: 'Rhode Island',
-  SC: 'South Carolina',
-  SD: 'South Dakota',
-  TN: 'Tennessee',
-  TX: 'Texas',
-  UT: 'Utah',
-  VT: 'Vermont',
-  VA: 'Virginia',
-  WA: 'Washington',
-  WV: 'West Virginia',
-  WI: 'Wisconsin',
-  WY: 'Wyoming',
+  if (statesMatch(place.state, state)) return true
+  return formatAddress(place).toLowerCase().includes(state.trim().toLowerCase())
 }

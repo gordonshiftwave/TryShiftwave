@@ -4,13 +4,11 @@ import { isPublicQualified, parseCsv, parseRow } from './parse'
 const DEFAULT_URL = '/locations.json'
 
 /**
- * Load public-qualified demo locations.
+ * Load public-qualified try-spots.
  *
- * Swap the live Google Sheet in by setting VITE_LOCATIONS_URL:
- *   - a .json file (array, or { locations: [...] })
- *   - a published CSV (Google Sheet → File → Download → CSV, or export URL)
- *
- * Only rows that pass the qualification gate are returned.
+ * Default feed is the committed snapshot in /public/locations.json.
+ * Point VITE_LOCATIONS_URL at a later sheet export (JSON or CSV) to refresh
+ * without a code change. Only rows that pass the qualification gate are returned.
  */
 export async function loadLocations(): Promise<LocationRecord[]> {
   const url = import.meta.env.VITE_LOCATIONS_URL?.trim() || DEFAULT_URL
