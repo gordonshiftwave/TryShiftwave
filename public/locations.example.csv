@@ -1,0 +1,2 @@
+id,name,type,street,city,state,zip,lat,lng,hours,phone,email,qualified
+boulder-pearl,Pearl Street Recovery,clinic,1942 Pearl St,Boulder,CO,80302,40.019,-105.271,Mon–Thu 9am–6pm,(303) 555-0195,care@pearlstreetrecovery.example,true
