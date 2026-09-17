@@ -11,7 +11,7 @@ Intake and review are a **system + named roles**, not a person: Shopify tags →
 | `sw-business` | **Intake only.** Queue for review. Never auto-publish. |
 | `sw-finder-exclude` | **Hard no.** Home use, private, unsafe, or “do not list.” Never maps. |
 
-Ops/Sales apply these tags. If both are present, exclude wins.
+Ops/Sales apply these tags. If both are present, exclude wins. Scripts also accept separator variants (`sw_business`, `sw_finder_exclude`) and normalize them to these names.
 
 ## Flow
 
@@ -22,28 +22,42 @@ sw-business     ops/staging.json   Review owner (role)  public/locations.json
 ```
 
 1. Tag the order in Shopify (`sw-business` or `sw-finder-exclude`).
-2. Admin → Orders → filter by tag `sw-business` → Export (see `ops/sample-shopify-export.csv` for headers).
-3. Stage: `node scripts/stage-from-shopify-csv.mjs path/to/export.csv`
+2. **Stage (preferred when credentials are set):** `node scripts/stage-from-shopify-api.mjs`  
+   Uses Dev Dashboard **client credentials** (`SHOPIFY_SHOP`, `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET`) — not a legacy `shpat_` custom-app token. Token is requested at runtime, cached in-process, and refreshed before it expires (~24h). Scope needed today: `read_orders`.  
+   Set the vars in your environment or a local `.env` (gitignored). **Do not paste secrets or tokens into chat.**  
+   `--dry-run` / `--stdout` prints staging JSON without writing. The script does **not** touch `public/locations.json` unless you pass `--publish-approved`.
+3. **CSV fallback** (no API creds, history beyond what `read_orders` returns, or air-gapped): Admin → Orders → filter by tag `sw-business` → Export (see `ops/sample-shopify-export.csv` for headers) → `node scripts/stage-from-shopify-csv.mjs path/to/export.csv`
 4. Open `ops/staging.json`. The **Review owner** (named role on the rota — Ops, Sales, or whoever owns review that week; never a default named person) sets:
    - `status`: `approved` | `rejected` | `excluded` | `pending_review`
    - `consent`: `true` only if the partner agrees to public demo visitors
    - Colin flags: `qualified`, `public_facing`
    - `visit_model`: `walk_in` | `appointment` | `none`  
-     `walk_in` = listed. `appointment` = listed **with** the flag (finder shows “By appointment — call to schedule”). `none` = do not list / excluded. Appointment is **not** a hide.
+     `walk_in` = listed. `appointment` = listed **with** the flag (finder shows “By appointment — call to schedule”). `none` = do not list / excluded. Appointment is **not** a hide. Shopify does not invent `appointment`.
    - `lat` / `lng` (required to pin; Shopify does not ship coordinates)
 5. Publish: `node scripts/publish-approved.mjs --write`  
    Copies **only** rows with `status=approved` **and** `consent=true` **and** `visit_model` ≠ `none` into `public/locations.json` (upsert by `id`). Appointment rows publish with `visit_model=appointment`. Use `--replace` only when staging is the full approved set. Use `--stdout` to print JSON without writing. Pending, rejected, excluded, `visit_model=none`, and “business tag but no consent” never go out.
 6. Website reads the published JSON. Finder UI does not talk to Shopify.
 
-Re-running the CSV import **keeps** human review fields. The exclude tag still forces `status=excluded`.
+Re-running API or CSV import **keeps** human review fields. The exclude tag still forces `status=excluded`. Purchase ≠ publish.
 
-`--publish-approved` on the stage script is the same gate. Without that flag, the stage script will not touch the public list.
+`--publish-approved` on a stage script is the same gate. Without that flag, stage scripts will not touch the public list.
+
+## Auth env (API staging)
+
+| Variable | Required | What it is |
+| --- | --- | --- |
+| `SHOPIFY_SHOP` | yes | Store subdomain only (`slow-wave-0f67`), not the full admin URL |
+| `SHOPIFY_CLIENT_ID` | yes | Dev Dashboard app client id |
+| `SHOPIFY_CLIENT_SECRET` | yes | Dev Dashboard app client secret |
+| `SHOPIFY_API_VERSION` | no | GraphQL Admin version (default `2026-07`) |
+
+Copy `.env.example` → `.env` for local values. Never commit `.env`, tokens, or live `ops/staging.json` with customer PII.
 
 ## Systems
 
 | System | Job |
 | --- | --- |
-| **Shopify** | Purchase signal. Tags only. |
+| **Shopify** | Purchase signal. Tags only. Admin API stages tagged orders when creds are set. |
 | **HubSpot** | Consent + qualification properties when that object is ready. Until then, set them on the staging row. |
 | **`ops/staging.json`** | Review queue. Field contract: `ops/shopify-staging.schema.json`. |
 | **`public/locations.json`** / `VITE_LOCATIONS_URL` | What the map shows. |
@@ -60,9 +74,11 @@ Roles, not a default named individual:
 ## Do not
 
 - Auto-publish from `sw-business`.
-- Run `--write` / `--publish-approved` against the sample CSV (that would upsert a fake pin).
+- Treat a purchase as a listing. Review is a **role**, never Dani-by-default.
+- Run `--write` / `--publish-approved` against the sample CSV or API `--demo` fixtures (that would upsert a fake pin).
 - Publish a row with `consent` false, `visit_model=none`, or missing coordinates.
 - Treat appointment-only partners as “hide from the map.” Set `visit_model=appointment` and publish the flag.
 - Assign intake or review to Dani (or any one person) by default.
 - Leave review as “ask Dani to edit the sheet.”
-- Commit real customer CSVs or a live `ops/staging.json` with PII.
+- Commit real customer CSVs, secrets, tokens, or a live `ops/staging.json` with PII.
+- Paste client secrets or access tokens into chat.

@@ -46,7 +46,7 @@ if (flags.help || flags.h) {
 const stagingPath = String(flags.staging || DEFAULT_STAGING_PATH)
 const staging = readJsonIfExists(fs, stagingPath)
 if (!staging || !Array.isArray(staging.rows)) {
-  console.error(`No staging queue at ${stagingPath}. Run: node scripts/stage-from-shopify-csv.mjs <export.csv>`)
+  console.error(`No staging queue at ${stagingPath}. Run: node scripts/stage-from-shopify-api.mjs`)
   process.exit(1)
 }
 

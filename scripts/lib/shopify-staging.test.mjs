@@ -1,14 +1,27 @@
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
 import { describe, it } from 'node:test'
+import { fileURLToPath } from 'node:url'
 
 import {
+  applyIncomingStaging,
   csvOrdersToStagingRows,
+  graphqlOrdersToStagingRows,
   isPublishable,
   mergeStagingRows,
+  normalizeTag,
   parseCsv,
+  parseTags,
   selectApproved,
   toPublicLocation,
 } from './shopify-staging.mjs'
+
+const here = path.dirname(fileURLToPath(import.meta.url))
+const graphqlFixture = JSON.parse(
+  fs.readFileSync(path.join(here, 'fixtures/shopify-graphql-orders.json'), 'utf8'),
+)
+const sampleCsv = fs.readFileSync(path.join(here, '../../ops/sample-shopify-export.csv'), 'utf8')
 
 const base = {
   id: 'oasis-austin-tx',
@@ -88,5 +101,103 @@ describe('visit_model publish gate', () => {
     const merged = mergeStagingRows(incoming, existing)
     assert.equal(merged[0].visit_model, 'appointment')
     assert.equal(merged[0].status, 'approved')
+  })
+})
+
+describe('tag aliases', () => {
+  it('normalizes separator variants to OPS.md tags', () => {
+    assert.equal(normalizeTag('sw-business'), 'sw-business')
+    assert.equal(normalizeTag('sw_business'), 'sw-business')
+    assert.equal(normalizeTag('SW Business'), 'sw-business')
+    assert.equal(normalizeTag('sw-finder-exclude'), 'sw-finder-exclude')
+    assert.equal(normalizeTag('sw_finder_exclude'), 'sw-finder-exclude')
+    assert.deepEqual(parseTags('sw_business, sw_finder_exclude'), ['sw-business', 'sw-finder-exclude'])
+  })
+})
+
+describe('GraphQL Admin orders → staging rows', () => {
+  const apiRows = graphqlOrdersToStagingRows(graphqlFixture.orders)
+  const csvRows = csvOrdersToStagingRows(parseCsv(sampleCsv))
+
+  it('maps tagged orders into the CSV staging shape and skips untagged', () => {
+    assert.equal(apiRows.length, 4)
+    assert.equal(csvRows.length, 4)
+    const byOrder = new Map(apiRows.map((row) => [row.shopify_order_id, row]))
+    for (const csv of csvRows) {
+      const api = byOrder.get(csv.shopify_order_id)
+      assert.ok(api, `missing API row for ${csv.shopify_order_id}`)
+      assert.equal(api.id, csv.id)
+      assert.equal(api.name, csv.name)
+      assert.equal(api.street, csv.street)
+      assert.equal(api.city, csv.city)
+      assert.equal(api.state, csv.state)
+      assert.equal(api.zip, csv.zip)
+      assert.equal(api.email, csv.email)
+      assert.equal(api.status, csv.status)
+      assert.equal(api.exclude, csv.exclude)
+      assert.equal(api.visit_model, 'none')
+      assert.equal(api.consent, false)
+      assert.deepEqual(api.shopify_tags, csv.shopify_tags)
+    }
+    assert.equal(
+      apiRows.some((row) => row.shopify_order_id === '9990001112223'),
+      false,
+    )
+  })
+
+  it('forces exclude tag to status=excluded', () => {
+    const excluded = apiRows.find((row) => row.shopify_order_id === '5678901234568')
+    assert.equal(excluded.status, 'excluded')
+    assert.equal(excluded.exclude, true)
+    assert.ok(excluded.shopify_tags.includes('sw-finder-exclude'))
+  })
+
+  it('does not invent appointment from Shopify', () => {
+    assert.ok(apiRows.every((row) => row.visit_model === 'none'))
+    assert.ok(apiRows.every((row) => row.qualified === false))
+    assert.ok(apiRows.every((row) => row.public_facing === false))
+  })
+
+  it('re-run preserves human review and still honors exclude', () => {
+    const incoming = graphqlOrdersToStagingRows(graphqlFixture.orders)
+    const oasis = incoming.find((row) => row.id.includes('oasis'))
+    const home = incoming.find((row) => row.shopify_order_id === '5678901234568')
+    const existing = [
+      {
+        ...oasis,
+        status: 'approved',
+        consent: true,
+        qualified: true,
+        public_facing: true,
+        visit_model: 'walk_in',
+        lat: 30.2672,
+        lng: -97.7431,
+        reviewed_by: 'review-owner',
+        reviewed_at: '2026-09-17',
+      },
+      {
+        ...home,
+        status: 'approved',
+        consent: true,
+        visit_model: 'appointment',
+        reviewed_by: 'review-owner',
+      },
+    ]
+    const applied = applyIncomingStaging(incoming, { rows: existing, demo: true })
+    const mergedOasis = applied.rows.find((row) => row.id === oasis.id)
+    const mergedHome = applied.rows.find((row) => row.id === home.id)
+    assert.equal(mergedOasis.status, 'approved')
+    assert.equal(mergedOasis.consent, true)
+    assert.equal(mergedOasis.visit_model, 'walk_in')
+    assert.equal(mergedOasis.reviewed_by, 'review-owner')
+    assert.equal(mergedOasis.lat, 30.2672)
+    assert.equal(mergedHome.status, 'excluded')
+    assert.equal(mergedHome.exclude, true)
+    assert.equal(applied.counts.pending_review, 2)
+    assert.equal(applied.counts.excluded, 1)
+    assert.equal(applied.upserted, 4)
+    assert.equal(applied.updated, 2)
+    assert.equal(applied.created, 2)
+    assert.equal(applied.staging.demo, true)
   })
 })

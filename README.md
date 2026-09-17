@@ -66,7 +66,9 @@ Standing process: Shopify tag `sw-business` → `ops/staging.json` → Review ow
 Until the staging queue holds the full approved set, you can still export the partner sheet and replace `public/locations.json`, or set `VITE_LOCATIONS_URL` at build time to a CORS-enabled feed. Keep the qualification columns either way (do not publish unqualified buyers).
 
 ```bash
-# Shopify Admin → Orders → tag sw-business → Export CSV
+# Preferred when SHOPIFY_SHOP + Dev Dashboard client id/secret are set
+node scripts/stage-from-shopify-api.mjs
+# CSV fallback: Shopify Admin → Orders → tag sw-business → Export CSV
 node scripts/stage-from-shopify-csv.mjs path/to/orders.csv
 # prints how many rows need review; writes ops/staging.json; does not touch the public list
 
@@ -131,7 +133,7 @@ id,name,street,city,state,zip,lat,lng,phone,email,hours,website,category,region,
 
 ## Out of scope (this app)
 
-- Shopify Admin API / auto-adding purchasers (CSV tag → staging → human gate is in [`OPS.md`](OPS.md))
+- Shopify Admin API auto-publish (API staging of tagged orders is in [`OPS.md`](OPS.md); purchase still ≠ listing)
 - Live HubSpot sync (HubSpot holds consent/qualification when ready; reviewers set those fields on the staging row until then)
 - Auth, booking
 - Ambassador network

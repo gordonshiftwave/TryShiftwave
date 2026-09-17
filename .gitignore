@@ -22,6 +22,11 @@ dist-ssr
 *.sln
 *.sw?
 
+# Secrets (Dev Dashboard client credentials, never commit)
+.env
+.env.*
+!.env.example
+
 # Live Shopify staging queue may contain customer PII. Sample CSV is committed; do not commit real exports.
 ops/staging.json
 ops/*.local.csv

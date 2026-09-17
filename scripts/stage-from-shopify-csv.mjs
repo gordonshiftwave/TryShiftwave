@@ -17,15 +17,13 @@ import path from 'node:path'
 import {
   DEFAULT_PUBLIC_PATH,
   DEFAULT_STAGING_PATH,
+  applyIncomingStaging,
   buildPublicFile,
-  buildStagingFile,
   csvOrdersToStagingRows,
-  mergeStagingRows,
   parseArgs,
   parseCsv,
   printReviewSummary,
   readJsonIfExists,
-  reviewCounts,
   selectApproved,
 } from './lib/shopify-staging.mjs'
 
@@ -58,14 +56,13 @@ const stagingPath = String(flags.staging || DEFAULT_STAGING_PATH)
 const csvText = fs.readFileSync(csvPath, 'utf8')
 const incoming = csvOrdersToStagingRows(parseCsv(csvText))
 const existingDoc = readJsonIfExists(fs, stagingPath)
-const existingRows = Array.isArray(existingDoc?.rows) ? existingDoc.rows : []
-const rows = mergeStagingRows(incoming, existingRows)
-const staging = buildStagingFile(rows, { demo: flags.demo === true || existingDoc?.demo === true })
+const { rows, staging, counts } = applyIncomingStaging(incoming, existingDoc, {
+  demo: flags.demo === true,
+})
 
 fs.mkdirSync(path.dirname(stagingPath) || '.', { recursive: true })
 fs.writeFileSync(stagingPath, `${JSON.stringify(staging, null, 2)}\n`)
 
-const counts = reviewCounts(rows)
 const extra = [`Wrote ${stagingPath}`]
 if (!flags['publish-approved']) {
   extra.push('Public locations not written (pass --publish-approved to copy approved + consent=true + visit_model!=none only).')
