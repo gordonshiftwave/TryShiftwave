@@ -8,7 +8,7 @@ import { CONUS_BOUNDS, pinKind, type Coord, type RankedLocation } from '../types
 import { prefersReducedMotion } from '../geo/distance'
 import { addStateLayers, applyPaperTheme, boundsFromPositions } from '../geo/mapStyle'
 
-// Vite includes `base` (`/TryShiftwave/` on GitHub Pages) in this worker URL.
+// Vite includes `base` (GitHub Pages `/TryShiftwave/`, or `VITE_BASE`) in this worker URL.
 const resolvedWorker = workerUrl.startsWith('/') || /^[a-z]+:/i.test(workerUrl)
   ? workerUrl
   : `${import.meta.env.BASE_URL}${workerUrl.replace(/^\.\//, '')}`

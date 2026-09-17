@@ -1,12 +1,16 @@
 # Where Can I Try Shiftwave?
 
-Public map for finding a nearby place to **try Shiftwave** — full-body pulsed pressure and guided breathwork. This is a standalone web app (search + map) meant to ship before it is embedded on shiftwave.co.
+Public map for finding a nearby place to **try Shiftwave** — full-body pulsed pressure and guided breathwork. Search + MapLibre map; embeddable on [shiftwave.co](https://shiftwave.co/).
+
+**Website team:** see [`INTEGRATION.md`](INTEGRATION.md) for iframe / Shopify / `VITE_BASE` / locations JSON.
 
 ## Live site
 
 **https://gordonshiftwave.github.io/TryShiftwave/**
 
-Pushes to `main` run `.github/workflows/deploy-pages.yml` (`npm ci`, `npm run build`, deploy `dist/` via GitHub Pages). Vite `base` is `/TryShiftwave/` for this project site. A custom domain or `username.github.io` user site would need `base: '/'` in `vite.config.ts`.
+Embed preview: [https://gordonshiftwave.github.io/TryShiftwave/?embed=1](https://gordonshiftwave.github.io/TryShiftwave/?embed=1) (or [`/embed.html`](https://gordonshiftwave.github.io/TryShiftwave/embed.html)).
+
+Pushes to `main` run `.github/workflows/deploy-pages.yml` (`npm ci`, `npm run build`, deploy `dist/` via GitHub Pages). Vite `base` defaults to `/TryShiftwave/` for this project site. Override with `VITE_BASE` (`/` or `/pages/find-shiftwave/`) when hosting on shiftwave.co — do not hard-code github.io.
 
 If that URL 404s, Gordon needs one click: **Settings → Pages → Build and deployment → Source: GitHub Actions**. Then open **Actions → Deploy GitHub Pages** and **Re-run failed jobs**. The first run’s `build` job already succeeded; `deploy` returns 404 until Pages is enabled (this token cannot flip that setting via the API).
 
@@ -30,7 +34,7 @@ npm run build
 npm run preview
 ```
 
-`npm run build` writes a static site to `dist/` (Vite + React + TypeScript) with `base` `/TryShiftwave/` so GitHub Pages asset URLs resolve. `npm run preview` serves that build at [http://localhost:4173/TryShiftwave/](http://localhost:4173/TryShiftwave/). No Mapbox/Google Maps API key is required: the map uses [MapLibre GL](https://maplibre.org/) with [OpenFreeMap](https://openfreemap.org/) vector tiles. MapLibre’s worker and `public/` files (`locations.json`, `us-states.json`, favicon) are resolved under that base path.
+`npm run build` writes a static site to `dist/` (Vite + React + TypeScript). Asset URLs follow Vite `base`: `/TryShiftwave/` unless `VITE_BASE` is set. `npm run preview` serves that build at [http://localhost:4173/TryShiftwave/](http://localhost:4173/TryShiftwave/) with the default Pages base. No Mapbox/Google Maps API key is required: the map uses [MapLibre GL](https://maplibre.org/) with [OpenFreeMap](https://openfreemap.org/) vector tiles. MapLibre’s worker and `public/` files (`locations.json`, `us-states.json`, favicon) are resolved under that base path.
 
 Geocoding uses Zippopotam.us (US ZIP codes) with OpenStreetMap Nominatim / Photon as fallback. Please keep OSM attribution visible (MapLibre adds it).
 
@@ -48,9 +52,9 @@ Brand tokens match [shiftwave.co](https://shiftwave.co/) for merge — Montserra
 
 ## Data module
 
-Runtime file: [`public/locations.json`](public/locations.json)
+Runtime file: [`public/locations.json`](public/locations.json) (fallback snapshot).
 
-The loader lives in `src/data/`. It accepts **JSON or CSV**. Field names from the sheet (`address` instead of `street`, full state names, free-form categories) are mapped in `parse.ts`. Street lines and hours are **not invented** — empty street stays empty; missing hours display as **Hours unavailable** (never “Call for hours”).
+The loader lives in `src/data/`. It **prefers** `VITE_LOCATIONS_URL` when set, then falls back to the committed JSON if the remote feed fails. It accepts **JSON or CSV**. Field names from the sheet (`address` instead of `street`, full state names, free-form categories) are mapped in `parse.ts`. Street lines and hours are **not invented** — empty street stays empty; missing hours display as **Hours unavailable** (never “Call for hours”). Schema for the website team: [`INTEGRATION.md`](INTEGRATION.md).
 
 Public hours/phones were enriched from official sites and directories (42/63 hours, 57/63 phones). Names still unresolved for hours (and some phones): Intentional Wellness Institute, Jill Sumiyasu, Keller Street Co-Work, Lit From Within, The Portal, Transformations, Maureen Whatley, Lovetree Alchemy, Kansas City Neuroplasticity Institute, Chris Collins, The Menopause Method, Disney Family Therapy, Dr. Karen Wright, Dr. Tim Patel, Halo Mental Health, Dr. Frank Lipman, Libertas Cryo, Dr. Anette Scott, Lucia Gadney, Sonder Psychotherapy, Heike Tabatabai.
 
@@ -119,7 +123,7 @@ id,name,street,city,state,zip,lat,lng,phone,email,hours,website,category,region,
 - HubSpot, auth, booking
 - Ambassador network
 - Prospect heat maps
-- shiftwave.co embed
+- Storepoint (point `VITE_LOCATIONS_URL` at any CORS JSON later)
 - Live Google Sheet write-back (snapshot refresh is a file replace)
 
 ## Stack
