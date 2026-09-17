@@ -5,6 +5,7 @@
  * Gate (all required):
  *   status === "approved"
  *   consent === true
+ *   visit_model === "walk_in" | "appointment"  (none never publishes)
  *   not excluded / no sw-finder-exclude
  *   name + coordinates present
  *
@@ -73,10 +74,10 @@ if (outPath) {
 
 console.error(
   [
-    `Publish gate: status=approved AND consent=true`,
+    `Publish gate: status=approved AND consent=true AND visit_model!=none`,
     `  staging:      ${stagingPath} (${counts.total} rows, ${counts.needs_review} need review)`,
     `  published:    ${approved.length}`,
-    `  skipped:      ${counts.total - approved.length} (pending/rejected/excluded/no consent/no coordinates)`,
+    `  skipped:      ${counts.total - approved.length} (pending/rejected/excluded/none/no consent/no coordinates)`,
     outPath ? `  wrote:        ${outPath}${flags.replace === true ? ' (replace)' : existingPublic?.locations ? ' (upsert)' : ''}` : '  wrote:        stdout',
   ].join('\n'),
 )

@@ -1,4 +1,5 @@
-import type { LocationRecord } from '../types'
+import type { LocationRecord, VisitModel } from '../types'
+import { VISIT_MODELS } from '../types'
 import { normalizeState, stateName } from '../geo/states'
 
 /**
@@ -6,7 +7,7 @@ import { normalizeState, stateName } from '../geo/states'
  *
  * These match the Google Sheet header row 1:1 (snake_case).
  * Extra alias headers are accepted in parseRow() so an existing
- * Dani spreadsheet can drop in with light cleanup.
+ * partner spreadsheet can drop in with light cleanup.
  */
 export const LOCATION_FIELDS = [
   'id',
@@ -28,6 +29,7 @@ export const LOCATION_FIELDS = [
   'public_facing',
   'demo_consent',
   'walk_in_ok',
+  'visit_model',
   'notes',
 ] as const
 
@@ -83,6 +85,9 @@ const KEY_ALIASES: Record<string, LocationField> = {
   walk_in: 'walk_in_ok',
   walkin: 'walk_in_ok',
   walk_in_appropriate: 'walk_in_ok',
+  visit_model: 'visit_model',
+  visitmodel: 'visit_model',
+  visit_type: 'visit_model',
   notes: 'notes',
   note: 'notes',
   address_note: 'notes',
@@ -144,7 +149,35 @@ function categoryOf(value: unknown): string {
 }
 
 export function isPublicQualified(row: LocationRecord): boolean {
-  return row.qualified && row.publicFacing && row.demoConsent && row.walkInOk
+  return row.qualified && row.publicFacing && row.demoConsent && row.visitModel !== 'none'
+}
+
+export function parseVisitModel(value: unknown, walkInOk?: unknown): VisitModel {
+  const raw = str(value)
+    .toLowerCase()
+    .replace(/[\s-]+/g, '_')
+  if (raw === 'walk_in' || raw === 'walkin' || raw === 'walk_ins') return 'walk_in'
+  if (
+    raw === 'appointment' ||
+    raw === 'by_appointment' ||
+    raw === 'appointment_only' ||
+    raw === 'appointments'
+  ) {
+    return 'appointment'
+  }
+  if (
+    raw === 'none' ||
+    raw === 'exclude' ||
+    raw === 'excluded' ||
+    raw === 'do_not_list' ||
+    raw === 'hidden'
+  ) {
+    return 'none'
+  }
+  if (VISIT_MODELS.includes(raw as VisitModel)) return raw as VisitModel
+  // Missing visit_model: do not invent appointment. False walk_in_ok → none (hidden).
+  if (walkInOk == null || walkInOk === '') return 'walk_in'
+  return parseBool(walkInOk) ? 'walk_in' : 'none'
 }
 
 export function parseRow(
@@ -168,6 +201,7 @@ export function parseRow(
   const state = normalizeState(str(src.state))
   const zip = str(src.zip)
   const street = streetLine(str(src.street), str(src.address), city, state, zip)
+  const visitModel = parseVisitModel(src.visit_model, src.walk_in_ok)
 
   return {
     id,
@@ -193,10 +227,8 @@ export function parseRow(
       src.demo_consent == null || src.demo_consent === ''
         ? true
         : parseBool(src.demo_consent),
-    walkInOk:
-      src.walk_in_ok == null || src.walk_in_ok === ''
-        ? true
-        : parseBool(src.walk_in_ok),
+    walkInOk: visitModel === 'walk_in',
+    visitModel,
     notes: str(src.notes),
   }
 }

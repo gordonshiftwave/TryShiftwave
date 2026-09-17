@@ -1,5 +1,9 @@
 export type LocationCategory = 'clinic' | 'gym' | 'wellness' | 'studio'
 
+/** How a visitor should show up. `none` is never listed. */
+export const VISIT_MODELS = ['walk_in', 'appointment', 'none'] as const
+export type VisitModel = (typeof VISIT_MODELS)[number]
+
 export type LocationRecord = {
   id: string
   name: string
@@ -19,8 +23,16 @@ export type LocationRecord = {
   qualified: boolean
   publicFacing: boolean
   demoConsent: boolean
+  /** Compat: true when visitModel is walk_in. Appointment is listed, not hidden. */
   walkInOk: boolean
+  visitModel: VisitModel
   notes: string
+}
+
+/** Public list copy. Walk-in stays quiet; appointment must not read as walk-in. */
+export function visitModelLabel(model: VisitModel): string | null {
+  if (model === 'appointment') return 'By appointment — call to schedule'
+  return null
 }
 
 export type Coord = {

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://shiftwave.local/ops/shopify-staging.schema.json",
   "title": "Shiftwave Shopify staging queue",
-  "description": "Field contract for ops/staging.json. Shopify tag sw-business is intake only. Rows reach public/locations.json only when status=approved AND consent=true. Tag sw-finder-exclude is a hard no.",
+  "description": "Field contract for ops/staging.json. Shopify tag sw-business is intake only. Rows reach public/locations.json only when status=approved AND consent=true AND visit_model is walk_in or appointment (none never publishes). Appointment rows publish with the flag. Tag sw-finder-exclude is a hard no.",
   "type": "object",
   "additionalProperties": false,
   "required": ["source", "updated", "rows"],
@@ -45,6 +45,11 @@
       "type": "string",
       "enum": ["pending_review", "approved", "rejected", "excluded"]
     },
+    "visitModel": {
+      "type": "string",
+      "enum": ["walk_in", "appointment", "none"],
+      "description": "Set at qualify. walk_in = listed (walk-ins welcome). appointment = listed with a call-to-schedule label. none = do not list / excluded from the public map."
+    },
     "stagingRow": {
       "type": "object",
       "additionalProperties": false,
@@ -57,6 +62,7 @@
         "qualified",
         "public_facing",
         "walk_in_ok",
+        "visit_model",
         "shopify_tags"
       ],
       "properties": {
@@ -84,8 +90,9 @@
         },
         "walk_in_ok": {
           "type": "boolean",
-          "description": "Appropriate for the public map (not events-only / appointment-hidden)."
+          "description": "Compat: true when visit_model is walk_in. Appointment-only is visit_model=appointment — listed, not hidden."
         },
+        "visit_model": { "$ref": "#/$defs/visitModel" },
         "name": {
           "type": "string",
           "description": "Public business name (Shipping/Billing Company)."

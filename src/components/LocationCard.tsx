@@ -1,4 +1,10 @@
-import { categoryLabel, pinKind, type LocationCategory, type RankedLocation } from '../types'
+import {
+  categoryLabel,
+  pinKind,
+  visitModelLabel,
+  type LocationCategory,
+  type RankedLocation,
+} from '../types'
 import { formatAddress, hoursAreUnavailable, mapsUrl, telHref } from '../data/parse'
 import { formatMiles } from '../geo/distance'
 
@@ -18,6 +24,7 @@ type LocationCardProps = {
 
 export function LocationCard({ place, active, onSelect, onHover }: LocationCardProps) {
   const address = formatAddress(place)
+  const visitLabel = visitModelLabel(place.visitModel)
 
   return (
     <article
@@ -53,6 +60,9 @@ export function LocationCard({ place, active, onSelect, onHover }: LocationCardP
               {place.region ? ` · ${place.region}` : ''}
             </span>
           </p>
+          {visitLabel && (
+            <p className="visit-label visit-label--appointment mt-1">{visitLabel}</p>
+          )}
         </div>
         {place.distanceMiles != null && (
           <span className="distance-chip mt-0.5">{formatMiles(place.distanceMiles)}</span>

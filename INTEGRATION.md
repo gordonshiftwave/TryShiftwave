@@ -2,9 +2,9 @@
 
 This app is a **static** search + MapLibre map. Host the built files, or iframe a hosted copy. There is **no Google Maps API key**, **no Storepoint**, and no backend of our own. Partner pins come from JSON (or CSV) that you control.
 
-Only **approved** public try-spots belong in the feed. The UI still filters to rows marked qualified, public-facing, demo-consenting, and walk-in appropriate — but the source of truth is the list you publish.
+Only **approved** public try-spots belong in the feed. The UI still filters to rows marked qualified, public-facing, and demo-consenting, with `visit_model` of `walk_in` or `appointment` (`none` is never listed) — but the source of truth is the list you publish.
 
-**Location intake is an ops pipeline, not a sheet edit.** Tag Shopify orders `sw-business` (queue only, never auto-publish) or `sw-finder-exclude` (hard no), stage with `scripts/stage-from-shopify-csv.mjs`, have any trained owner qualify the row, then publish approved + consenting rows to `public/locations.json` / `VITE_LOCATIONS_URL`. Shopify is the purchase signal; HubSpot holds consent/qualification when that object is ready. Team playbook: [`OPS.md`](OPS.md). Schema: [`ops/shopify-staging.schema.json`](ops/shopify-staging.schema.json).
+**Location intake is an ops pipeline, not a sheet edit.** Tag Shopify orders `sw-business` (queue only, never auto-publish) or `sw-finder-exclude` (hard no), stage with `scripts/stage-from-shopify-csv.mjs`, have the Review owner (role) qualify the row — including `visit_model` — then publish approved + consenting rows with `visit_model` ≠ `none` to `public/locations.json` / `VITE_LOCATIONS_URL`. Shopify is the purchase signal; HubSpot holds consent/qualification when that object is ready. Team playbook: [`OPS.md`](OPS.md). Schema: [`ops/shopify-staging.schema.json`](ops/shopify-staging.schema.json).
 
 ## 1. Choose a host path (`VITE_BASE`)
 
@@ -118,7 +118,7 @@ Copy `.env.example` to `.env` for local overrides. Rebuild after changing any `V
 
 ## 5. Locations JSON schema
 
-Publish **only approved try-spots**. The client still drops rows that fail the gate (`qualified`, `public_facing`, `demo_consent`, `walk_in_ok` all true). Missing flags currently default to true — send explicit booleans and omit unqualified rows.
+Publish **only approved try-spots**. The client still drops rows that fail the gate (`qualified`, `public_facing`, `demo_consent` true, and `visit_model` is `walk_in` or `appointment` — never `none`). Appointment rows are listed with the flag; they are not hidden. Missing flags currently default to true / `walk_in` — send explicit values and omit unqualified rows.
 
 JSON may be either:
 
@@ -149,7 +149,8 @@ or a bare array `[ { "...": "row" } ]`. `{ "rows": [ ... ] }` is also accepted.
 | `qualified` | yes | `true` / `TRUE` / `yes` |
 | `public_facing` | yes | Public business, not home use |
 | `demo_consent` | yes | Partner agrees to receive demo visitors |
-| `walk_in_ok` | yes | Appropriate for walk-ins (not events-only) |
+| `walk_in_ok` | compat | True when `visit_model` is `walk_in`. Do not use false as a hide. |
+| `visit_model` | yes | `walk_in` \| `appointment` \| `none`. `none` is never listed. Appointment publishes with this flag (finder: “By appointment — call to schedule”). Missing values default to `walk_in`; do not invent `appointment`. |
 | `notes` | optional | Internal; not shown |
 
 Aliases such as `latitude`, `address`, `zip_code`, and `walk_in_appropriate` are accepted (see `src/data/parse.ts`). CSV with the same headers works if you would rather export a sheet.
@@ -177,7 +178,8 @@ Minimal example:
       "qualified": true,
       "public_facing": true,
       "demo_consent": true,
-      "walk_in_ok": true
+      "walk_in_ok": true,
+      "visit_model": "walk_in"
     }
   ]
 }

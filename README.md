@@ -3,7 +3,7 @@
 Public map for finding a nearby place to **try Shiftwave** — full-body pulsed pressure and guided breathwork. Search + MapLibre map; embeddable on [shiftwave.co](https://shiftwave.co/).
 
 **Website team:** see [`INTEGRATION.md`](INTEGRATION.md) for iframe / Shopify / `VITE_BASE` / locations JSON.  
-**Ops / Sales:** see [`OPS.md`](OPS.md) — tag `sw-business` / `sw-finder-exclude`, stage, human qualify, then publish. Do not hand-edit the public list.
+**Ops / Sales:** see [`OPS.md`](OPS.md) — tag `sw-business` / `sw-finder-exclude`, stage, Review owner (role) qualifies including `visit_model`, then publish. Do not hand-edit the public list. Do not assign review to Dani by default.
 
 ## Live site
 
@@ -15,9 +15,9 @@ Pushes to `main` run `.github/workflows/deploy-pages.yml` (`npm ci`, `npm run bu
 
 If that URL 404s, Gordon needs one click: **Settings → Pages → Build and deployment → Source: GitHub Actions**. Then open **Actions → Deploy GitHub Pages** and **Re-run failed jobs**. The first run’s `build` job already succeeded; `deploy` returns 404 until Pages is enabled (this token cannot flip that setting via the API).
 
-[`public/locations.json`](public/locations.json) is the **published** snapshot of qualified try-spots (today: Dani’s *Shiftwave Clinic & Commercial List*, “Can we send people there to Demo?” = YES). The standing intake path is Shopify tagging → staging queue → human qualify → this file (or `VITE_LOCATIONS_URL`) — see [`OPS.md`](OPS.md) and [`INTEGRATION.md`](INTEGRATION.md). No Shopify in the client, no Google write access, no secrets.
+[`public/locations.json`](public/locations.json) is the **published** snapshot of qualified try-spots (historical source: the partner *Shiftwave Clinic & Commercial List*, “Can we send people there to Demo?” = YES). The standing intake path is a **system + named roles** — Shopify tagging → staging queue → Review owner (role) qualify → this file (or `VITE_LOCATIONS_URL`) — see [`OPS.md`](OPS.md) and [`INTEGRATION.md`](INTEGRATION.md). No Shopify in the client, no Google write access, no secrets. Do not assign review to Dani (or any one person) by default.
 
-> Live partner list. Only **qualified** public try-spots appear on the map (public-facing, demo consent, walk-in appropriate). Pins are still city/ZIP (the sheet has no street-address column). Hours are public listing hours where found, otherwise **Hours unavailable**. Ambassadors, pop-ups, booking, and heat maps are out of scope here.
+> Live partner list. Only **qualified** public try-spots appear on the map (public-facing, demo consent, `visit_model` walk-in or appointment). Pins are still city/ZIP (the sheet has no street-address column). Hours are public listing hours where found, otherwise **Hours unavailable**. Ambassadors, pop-ups, booking, and heat maps are out of scope here.
 
 ## Run locally
 
@@ -45,7 +45,7 @@ Geocoding uses Zippopotam.us (US ZIP codes) with OpenStreetMap Nominatim / Photo
 - Map and results appear **after** search or **Use my location**
 - **Use my location**, with a clear fallback if permission is denied or the page is not HTTPS
 - Results as a simple list with distance; pins synced to the list; state click-to-zoom at national zoom
-- Each place: name, distance (mi), address (Google Maps link), hours, phone and/or email
+- Each place: name, distance (mi), address (Google Maps link), hours, phone and/or email. Appointment-only partners show **By appointment — call to schedule** (not walk-in language). Walk-in pins stay unlabeled. `none` is never listed.
 - Empty / no-nearby state shows the closest qualified try-spots
 - Mobile-first layout; `prefers-reduced-motion` disables fly/fit animation and the results reveal
 
@@ -61,7 +61,7 @@ Public hours/phones were enriched from official sites and directories (42/63 hou
 
 ### Refresh later
 
-Standing process: Shopify tag `sw-business` → `ops/staging.json` → human qualify → publish approved + consenting rows. Playbook: [`OPS.md`](OPS.md). Do not treat Dani hand-editing this JSON as the long-term path.
+Standing process: Shopify tag `sw-business` → `ops/staging.json` → Review owner (role) qualify (including `visit_model`) → publish approved + consenting rows with `visit_model` ≠ `none`. Playbook: [`OPS.md`](OPS.md). Intake is a system + named roles — do not assign it to Dani by default.
 
 Until the staging queue holds the full approved set, you can still export the partner sheet and replace `public/locations.json`, or set `VITE_LOCATIONS_URL` at build time to a CORS-enabled feed. Keep the qualification columns either way (do not publish unqualified buyers).
 
@@ -71,7 +71,7 @@ node scripts/stage-from-shopify-csv.mjs path/to/orders.csv
 # prints how many rows need review; writes ops/staging.json; does not touch the public list
 
 node scripts/publish-approved.mjs --write
-# copies ONLY status=approved AND consent=true into public/locations.json
+# copies ONLY status=approved AND consent=true AND visit_model!=none into public/locations.json
 ```
 
 Examples:
@@ -113,19 +113,20 @@ Header row of the Google Sheet should use these names (snake_case). Aliases such
 | `qualified` | yes | `TRUE` / `FALSE` |
 | `public_facing` | yes | Public business, not home use |
 | `demo_consent` | yes | Partner agrees to receive demo visitors |
-| `walk_in_ok` | yes | Appropriate for walk-ins (not events-only) |
+| `walk_in_ok` | compat | True when `visit_model` is `walk_in`. Appointment is not a hide. |
+| `visit_model` | yes | `walk_in` \| `appointment` \| `none`. `none` is never listed. Appointment publishes with the flag. |
 | `notes` | optional | Internal; not shown in the UI |
 
 Boolean cells accept `TRUE`, `yes`, `1`, `x`.
 
 JSON may be either an array of row objects or `{ "locations": [ ... ] }`.
 
-**Public map filter:** a row is shown only when `qualified`, `public_facing`, `demo_consent`, and `walk_in_ok` are all true. That is Colin’s rule — Shopify `sw-business` is intake only, never auto-publish. `sw-finder-exclude` is a hard no. Team playbook: [`OPS.md`](OPS.md).
+**Public map filter:** a row is shown only when `qualified`, `public_facing`, and `demo_consent` are true and `visit_model` is `walk_in` or `appointment` (`none` never lists). Appointment-only partners are listed with a call-to-schedule label. That is Colin’s rule — Shopify `sw-business` is intake only, never auto-publish. `sw-finder-exclude` is a hard no. Team playbook: [`OPS.md`](OPS.md).
 
 ### Example CSV header
 
 ```csv
-id,name,street,city,state,zip,lat,lng,phone,email,hours,website,category,region,qualified,public_facing,demo_consent,walk_in_ok,notes
+id,name,street,city,state,zip,lat,lng,phone,email,hours,website,category,region,qualified,public_facing,demo_consent,walk_in_ok,visit_model,notes
 ```
 
 ## Out of scope (this app)
