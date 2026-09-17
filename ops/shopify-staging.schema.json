@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shiftwave.local/ops/shopify-staging.schema.json",
+  "title": "Shiftwave Shopify staging queue",
+  "description": "Field contract for ops/staging.json. Shopify tag sw-business is intake only. Rows reach public/locations.json only when status=approved AND consent=true. Tag sw-finder-exclude is a hard no.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["source", "updated", "rows"],
+  "properties": {
+    "source": {
+      "type": "string",
+      "const": "shopify_staging"
+    },
+    "demo": {
+      "type": "boolean",
+      "description": "True for sample/fixture queues. Never true for a live customer export."
+    },
+    "updated": {
+      "type": "string",
+      "description": "ISO date or datetime of last stage/merge."
+    },
+    "intake_tag": {
+      "type": "string",
+      "const": "sw-business"
+    },
+    "exclude_tag": {
+      "type": "string",
+      "const": "sw-finder-exclude"
+    },
+    "count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "needs_review": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "rows": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/stagingRow" }
+    }
+  },
+  "$defs": {
+    "stagingStatus": {
+      "type": "string",
+      "enum": ["pending_review", "approved", "rejected", "excluded"]
+    },
+    "stagingRow": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "status",
+        "consent",
+        "exclude",
+        "qualified",
+        "public_facing",
+        "walk_in_ok",
+        "shopify_tags"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Stable slug (company + locality). Preserved across re-imports."
+        },
+        "status": { "$ref": "#/$defs/stagingStatus" },
+        "consent": {
+          "type": "boolean",
+          "description": "Partner agrees to receive public demo visitors. Required true to publish. HubSpot holds this when that object is live; until then reviewers set it here."
+        },
+        "exclude": {
+          "type": "boolean",
+          "description": "Hard no. True when Shopify tags include sw-finder-exclude."
+        },
+        "qualified": {
+          "type": "boolean",
+          "description": "Colin gate: this is a real try-spot, not merely a business buyer."
+        },
+        "public_facing": {
+          "type": "boolean",
+          "description": "Public business, not home / private use."
+        },
+        "walk_in_ok": {
+          "type": "boolean",
+          "description": "Appropriate for the public map (not events-only / appointment-hidden)."
+        },
+        "name": {
+          "type": "string",
+          "description": "Public business name (Shipping/Billing Company)."
+        },
+        "street": { "type": "string" },
+        "city": { "type": "string" },
+        "state": { "type": "string", "description": "USPS code preferred (CA), full name accepted." },
+        "zip": { "type": "string" },
+        "lat": { "type": ["number", "null"], "minimum": -90, "maximum": 90 },
+        "lng": { "type": ["number", "null"], "minimum": -180, "maximum": 180 },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "hours": { "type": "string" },
+        "website": { "type": "string" },
+        "category": { "type": "string" },
+        "region": { "type": "string" },
+        "notes": { "type": "string" },
+        "shopify_order_id": { "type": "string" },
+        "shopify_order_name": { "type": "string", "description": "Admin order name, e.g. #1042." },
+        "shopify_tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "reviewed_by": { "type": "string" },
+        "reviewed_at": { "type": "string" },
+        "hubspot_id": {
+          "type": "string",
+          "description": "Optional HubSpot record id once consent/qualification live there."
+        }
+      }
+    }
+  }
+}

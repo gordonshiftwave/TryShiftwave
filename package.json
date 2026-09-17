@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "ops:stage": "node scripts/stage-from-shopify-csv.mjs",
+    "ops:publish": "node scripts/publish-approved.mjs"
   },
   "dependencies": {
     "maplibre-gl": "^6.10.0",

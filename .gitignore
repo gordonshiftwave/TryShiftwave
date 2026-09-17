@@ -21,3 +21,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Live Shopify staging queue may contain customer PII. Sample CSV is committed; do not commit real exports.
+ops/staging.json
+ops/*.local.csv
+ops/*.local.json
