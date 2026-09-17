@@ -1,0 +1,136 @@
+{
+  "comment": "Synthetic GraphQL Admin Order nodes mirroring ops/sample-shopify-export.csv. No live PII.",
+  "orders": [
+    {
+      "id": "gid://shopify/Order/5678901234567",
+      "name": "#1042",
+      "email": "ops.oasis@example.com",
+      "phone": "5125550101",
+      "note": "Business buyer — tag for finder intake",
+      "tags": ["sw-business"],
+      "shippingAddress": {
+        "company": "Oasis Recovery Studio",
+        "name": "Jordan Hale",
+        "address1": "100 Congress Ave",
+        "city": "Austin",
+        "provinceCode": "TX",
+        "province": "Texas",
+        "zip": "78701",
+        "phone": "5125550101"
+      },
+      "billingAddress": {
+        "company": "Oasis Recovery Studio",
+        "name": "Jordan Hale",
+        "address1": "100 Congress Ave",
+        "city": "Austin",
+        "provinceCode": "TX",
+        "province": "Texas",
+        "zip": "78701",
+        "phone": "5125550101"
+      }
+    },
+    {
+      "id": "gid://shopify/Order/5678901234568",
+      "name": "#1043",
+      "email": "home.user@example.com",
+      "phone": "2015550199",
+      "note": "Home use — do not list",
+      "tags": ["sw-business", "sw-finder-exclude"],
+      "shippingAddress": {
+        "company": "",
+        "name": "Alex Rivera",
+        "address1": "14 Maple Lane",
+        "city": "Ridgewood",
+        "provinceCode": "NJ",
+        "province": "New Jersey",
+        "zip": "07450",
+        "phone": "2015550199"
+      },
+      "billingAddress": {
+        "company": "",
+        "name": "Alex Rivera",
+        "address1": "14 Maple Lane",
+        "city": "Ridgewood",
+        "provinceCode": "NJ",
+        "province": "New Jersey",
+        "zip": "07450",
+        "phone": "2015550199"
+      }
+    },
+    {
+      "id": "gid://shopify/Order/5678901234569",
+      "name": "#1044",
+      "email": "inbox@example.com",
+      "phone": "",
+      "note": "Incomplete address — still needs a human",
+      "tags": ["sw_business"],
+      "shippingAddress": {
+        "company": "",
+        "name": "Sam Lee",
+        "address1": "",
+        "city": "",
+        "provinceCode": "CA",
+        "province": "California",
+        "zip": "",
+        "phone": ""
+      },
+      "billingAddress": {
+        "company": "",
+        "name": "Sam Lee",
+        "address1": "",
+        "city": "",
+        "provinceCode": "CA",
+        "province": "California",
+        "zip": "",
+        "phone": ""
+      }
+    },
+    {
+      "id": "gid://shopify/Order/5678901234570",
+      "name": "#1046",
+      "email": "front.desk@northsidept.example",
+      "phone": "3035550144",
+      "note": "",
+      "tags": ["sw-business"],
+      "shippingAddress": {
+        "company": "Northside PT",
+        "name": "Casey Nguyen",
+        "address1": "445 17th St",
+        "city": "Denver",
+        "provinceCode": "CO",
+        "province": "Colorado",
+        "zip": "80202",
+        "phone": "3035550144"
+      },
+      "billingAddress": {
+        "company": "Northside PT",
+        "name": "Casey Nguyen",
+        "address1": "445 17th St",
+        "city": "Denver",
+        "provinceCode": "CO",
+        "province": "Colorado",
+        "zip": "80202",
+        "phone": "3035550144"
+      }
+    },
+    {
+      "id": "gid://shopify/Order/9990001112223",
+      "name": "#1999",
+      "email": "retail.only@example.com",
+      "phone": "",
+      "note": "Untagged retail — mapper must skip",
+      "tags": ["vip"],
+      "shippingAddress": {
+        "company": "Should Skip LLC",
+        "name": "Skip Me",
+        "address1": "1 Nowhere St",
+        "city": "Boise",
+        "provinceCode": "ID",
+        "province": "Idaho",
+        "zip": "83702",
+        "phone": ""
+      },
+      "billingAddress": null
+    }
+  ]
+}

@@ -8,8 +8,9 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "ops:stage": "node scripts/stage-from-shopify-csv.mjs",
+    "ops:stage:api": "node scripts/stage-from-shopify-api.mjs",
     "ops:publish": "node scripts/publish-approved.mjs",
-    "test": "node --test scripts/lib/shopify-staging.test.mjs"
+    "test": "node --test scripts/lib/*.test.mjs"
   },
   "dependencies": {
     "maplibre-gl": "^6.10.0",

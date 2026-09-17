@@ -4,7 +4,7 @@ This app is a **static** search + MapLibre map. Host the built files, or iframe 
 
 Only **approved** public try-spots belong in the feed. The UI still filters to rows marked qualified, public-facing, and demo-consenting, with `visit_model` of `walk_in` or `appointment` (`none` is never listed) — but the source of truth is the list you publish.
 
-**Location intake is an ops pipeline, not a sheet edit.** Tag Shopify orders `sw-business` (queue only, never auto-publish) or `sw-finder-exclude` (hard no), stage with `scripts/stage-from-shopify-csv.mjs`, have the Review owner (role) qualify the row — including `visit_model` — then publish approved + consenting rows with `visit_model` ≠ `none` to `public/locations.json` / `VITE_LOCATIONS_URL`. Shopify is the purchase signal; HubSpot holds consent/qualification when that object is ready. Team playbook: [`OPS.md`](OPS.md). Schema: [`ops/shopify-staging.schema.json`](ops/shopify-staging.schema.json).
+**Location intake is an ops pipeline, not a sheet edit.** Tag Shopify orders `sw-business` (queue only, never auto-publish) or `sw-finder-exclude` (hard no), stage with `scripts/stage-from-shopify-api.mjs` when Dev Dashboard client credentials are set (CSV `scripts/stage-from-shopify-csv.mjs` is the fallback), have the Review owner (role) qualify the row — including `visit_model` — then publish approved + consenting rows with `visit_model` ≠ `none` to `public/locations.json` / `VITE_LOCATIONS_URL`. Shopify is the purchase signal; HubSpot holds consent/qualification when that object is ready. Team playbook: [`OPS.md`](OPS.md). Schema: [`ops/shopify-staging.schema.json`](ops/shopify-staging.schema.json).
 
 ## 1. Choose a host path (`VITE_BASE`)
 
@@ -114,7 +114,7 @@ Search-first UX, Reset taglines, wave mark, voice mic, and the MapLibre map stay
 | `VITE_LOCATIONS_URL` | no | build | Remote JSON/CSV feed. Falls back to `/locations.json` under `VITE_BASE`. |
 | `VITE_EMBED` | no | build | `true` / `1` bakes full-bleed embed layout. |
 
-Copy `.env.example` to `.env` for local overrides. Rebuild after changing any `VITE_*` value.
+Copy `.env.example` to `.env` for local overrides. Rebuild after changing any `VITE_*` value. Shopify Admin staging credentials (`SHOPIFY_SHOP`, `SHOPIFY_CLIENT_ID`, `SHOPIFY_CLIENT_SECRET`) are ops-only — see [`OPS.md`](OPS.md); do not paste them into chat.
 
 ## 5. Locations JSON schema
 
@@ -195,11 +195,11 @@ If the theme already loads Montserrat, a second Google Fonts request from the if
 
 ## 7. Shopify notes
 
-- **Orders / intake:** tag `sw-business` or `sw-finder-exclude`. That is not a listing. See [`OPS.md`](OPS.md).
+- **Orders / intake:** tag `sw-business` or `sw-finder-exclude`. That is not a listing. Preferred stage: `scripts/stage-from-shopify-api.mjs` (Dev Dashboard client credentials). CSV remains fallback. See [`OPS.md`](OPS.md).
 - A custom page or section with the iframe (Option A) is the lowest-friction path to *display* the finder.
 - To serve files from the theme instead, build with `VITE_BASE=./` (or the theme asset path) and upload `dist/`. Shopify CDN paths change; iframe or a stable CDN URL is usually easier.
 - Preview the Find page on mobile. The map uses cooperative gestures so page scroll is not trapped.
 
 ## Out of scope (still)
 
-Shopify Admin API auto-publish, live HubSpot sync, booking, ambassadors, Storepoint, and live Google Sheet write-back. Refresh the published JSON (or `VITE_LOCATIONS_URL`) from the staging queue when the partner list changes.
+Shopify Admin API **auto-publish**, live HubSpot sync, booking, ambassadors, Storepoint, and live Google Sheet write-back. API **staging** (tagged orders → `ops/staging.json`) is the preferred ops path when credentials are set; it still requires a human Review owner. Refresh the published JSON (or `VITE_LOCATIONS_URL`) from the staging queue when the partner list changes.
