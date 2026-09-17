@@ -4,6 +4,8 @@ This app is a **static** search + MapLibre map. Host the built files, or iframe 
 
 Only **approved** public try-spots belong in the feed. The UI still filters to rows marked qualified, public-facing, demo-consenting, and walk-in appropriate — but the source of truth is the list you publish.
 
+**Location intake is an ops pipeline, not a sheet edit.** Tag Shopify orders `sw-business` (queue only, never auto-publish) or `sw-finder-exclude` (hard no), stage with `scripts/stage-from-shopify-csv.mjs`, have any trained owner qualify the row, then publish approved + consenting rows to `public/locations.json` / `VITE_LOCATIONS_URL`. Shopify is the purchase signal; HubSpot holds consent/qualification when that object is ready. Team playbook: [`OPS.md`](OPS.md). Schema: [`ops/shopify-staging.schema.json`](ops/shopify-staging.schema.json).
+
 ## 1. Choose a host path (`VITE_BASE`)
 
 Vite `base` is the public URL prefix for JS/CSS/`locations.json`. Set it at **build time**. GitHub Pages keeps working if you leave it unset (build defaults to `/TryShiftwave/`).
@@ -39,7 +41,7 @@ Requirements:
 - JSON matching the schema below (CSV also works).
 - Do **not** use Google Sheets `/export?format=csv` in the browser — that origin usually blocks CORS.
 
-Until a managed API exists, replace `public/locations.json` in this repo or host a copy at your URL. Storepoint is intentionally not wired up.
+Until a managed API exists, publish from the staging queue (`scripts/publish-approved.mjs`) into `public/locations.json` or host that JSON at your URL. Storepoint is intentionally not wired up. See [`OPS.md`](OPS.md).
 
 ## 3. Embed on the site
 
@@ -191,10 +193,11 @@ If the theme already loads Montserrat, a second Google Fonts request from the if
 
 ## 7. Shopify notes
 
-- A custom page or section with the iframe (Option A) is the lowest-friction path.
+- **Orders / intake:** tag `sw-business` or `sw-finder-exclude`. That is not a listing. See [`OPS.md`](OPS.md).
+- A custom page or section with the iframe (Option A) is the lowest-friction path to *display* the finder.
 - To serve files from the theme instead, build with `VITE_BASE=./` (or the theme asset path) and upload `dist/`. Shopify CDN paths change; iframe or a stable CDN URL is usually easier.
 - Preview the Find page on mobile. The map uses cooperative gestures so page scroll is not trapped.
 
 ## Out of scope (still)
 
-Shopify customer sync, HubSpot, booking, ambassadors, Storepoint, and live Google Sheet write-back. Refresh the JSON (or `VITE_LOCATIONS_URL`) when the partner list changes.
+Shopify Admin API auto-publish, live HubSpot sync, booking, ambassadors, Storepoint, and live Google Sheet write-back. Refresh the published JSON (or `VITE_LOCATIONS_URL`) from the staging queue when the partner list changes.

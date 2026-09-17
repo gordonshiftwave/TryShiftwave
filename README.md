@@ -2,7 +2,8 @@
 
 Public map for finding a nearby place to **try Shiftwave** — full-body pulsed pressure and guided breathwork. Search + MapLibre map; embeddable on [shiftwave.co](https://shiftwave.co/).
 
-**Website team:** see [`INTEGRATION.md`](INTEGRATION.md) for iframe / Shopify / `VITE_BASE` / locations JSON.
+**Website team:** see [`INTEGRATION.md`](INTEGRATION.md) for iframe / Shopify / `VITE_BASE` / locations JSON.  
+**Ops / Sales:** see [`OPS.md`](OPS.md) — tag `sw-business` / `sw-finder-exclude`, stage, human qualify, then publish. Do not hand-edit the public list.
 
 ## Live site
 
@@ -14,7 +15,7 @@ Pushes to `main` run `.github/workflows/deploy-pages.yml` (`npm ci`, `npm run bu
 
 If that URL 404s, Gordon needs one click: **Settings → Pages → Build and deployment → Source: GitHub Actions**. Then open **Actions → Deploy GitHub Pages** and **Re-run failed jobs**. The first run’s `build` job already succeeded; `deploy` returns 404 until Pages is enabled (this token cannot flip that setting via the API).
 
-[`public/locations.json`](public/locations.json) is a **static snapshot** of qualified partners from Dani’s *Shiftwave Clinic & Commercial List* (rows where “Can we send people there to Demo?” = YES). No Shopify, no Google write access, and no secrets. To refresh, export the sheet and replace that file (or point `VITE_LOCATIONS_URL` at a CORS-enabled JSON/CSV feed).
+[`public/locations.json`](public/locations.json) is the **published** snapshot of qualified try-spots (today: Dani’s *Shiftwave Clinic & Commercial List*, “Can we send people there to Demo?” = YES). The standing intake path is Shopify tagging → staging queue → human qualify → this file (or `VITE_LOCATIONS_URL`) — see [`OPS.md`](OPS.md) and [`INTEGRATION.md`](INTEGRATION.md). No Shopify in the client, no Google write access, no secrets.
 
 > Live partner list. Only **qualified** public try-spots appear on the map (public-facing, demo consent, walk-in appropriate). Pins are still city/ZIP (the sheet has no street-address column). Hours are public listing hours where found, otherwise **Hours unavailable**. Ambassadors, pop-ups, booking, and heat maps are out of scope here.
 
@@ -58,10 +59,20 @@ The loader lives in `src/data/`. It **prefers** `VITE_LOCATIONS_URL` when set, t
 
 Public hours/phones were enriched from official sites and directories (42/63 hours, 57/63 phones). Names still unresolved for hours (and some phones): Intentional Wellness Institute, Jill Sumiyasu, Keller Street Co-Work, Lit From Within, The Portal, Transformations, Maureen Whatley, Lovetree Alchemy, Kansas City Neuroplasticity Institute, Chris Collins, The Menopause Method, Disney Family Therapy, Dr. Karen Wright, Dr. Tim Patel, Halo Mental Health, Dr. Frank Lipman, Libertas Cryo, Dr. Anette Scott, Lucia Gadney, Sonder Psychotherapy, Heike Tabatabai.
 
-### Refresh from the sheet later
+### Refresh later
 
-1. Keep the qualification columns (do not publish unqualified buyers).
-2. Export JSON or CSV and replace `public/locations.json`, **or** set `VITE_LOCATIONS_URL` at build time to a CORS-enabled feed.
+Standing process: Shopify tag `sw-business` → `ops/staging.json` → human qualify → publish approved + consenting rows. Playbook: [`OPS.md`](OPS.md). Do not treat Dani hand-editing this JSON as the long-term path.
+
+Until the staging queue holds the full approved set, you can still export the partner sheet and replace `public/locations.json`, or set `VITE_LOCATIONS_URL` at build time to a CORS-enabled feed. Keep the qualification columns either way (do not publish unqualified buyers).
+
+```bash
+# Shopify Admin → Orders → tag sw-business → Export CSV
+node scripts/stage-from-shopify-csv.mjs path/to/orders.csv
+# prints how many rows need review; writes ops/staging.json; does not touch the public list
+
+node scripts/publish-approved.mjs --write
+# copies ONLY status=approved AND consent=true into public/locations.json
+```
 
 Examples:
 
@@ -109,7 +120,7 @@ Boolean cells accept `TRUE`, `yes`, `1`, `x`.
 
 JSON may be either an array of row objects or `{ "locations": [ ... ] }`.
 
-**Public map filter:** a row is shown only when `qualified`, `public_facing`, `demo_consent`, and `walk_in_ok` are all true. That is the Colin qualification gate from the growth-reports discussion — Shopify “business” tags are not enough.
+**Public map filter:** a row is shown only when `qualified`, `public_facing`, `demo_consent`, and `walk_in_ok` are all true. That is Colin’s rule — Shopify `sw-business` is intake only, never auto-publish. `sw-finder-exclude` is a hard no. Team playbook: [`OPS.md`](OPS.md).
 
 ### Example CSV header
 
@@ -119,8 +130,9 @@ id,name,street,city,state,zip,lat,lng,phone,email,hours,website,category,region,
 
 ## Out of scope (this app)
 
-- Shopify sync / auto-adding purchasers
-- HubSpot, auth, booking
+- Shopify Admin API / auto-adding purchasers (CSV tag → staging → human gate is in [`OPS.md`](OPS.md))
+- Live HubSpot sync (HubSpot holds consent/qualification when ready; reviewers set those fields on the staging row until then)
+- Auth, booking
 - Ambassador network
 - Prospect heat maps
 - Storepoint (point `VITE_LOCATIONS_URL` at any CORS JSON later)
