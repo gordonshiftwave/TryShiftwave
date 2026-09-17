@@ -171,6 +171,54 @@ textarea {
   background: var(--color-fog);
 }
 
+/*
+  Embed / iframe mode (?embed=1, /embed.html, VITE_EMBED, or nested frame).
+  Hides standalone app chrome and fills the host page or iframe.
+*/
+html[data-embed='true'],
+html.embed {
+  background-color: var(--color-paper);
+}
+
+html[data-embed='true'] body,
+html.embed body,
+html[data-embed='true'] #root,
+html.embed #root {
+  min-height: 100%;
+  background-color: var(--color-paper);
+}
+
+.finder--embed {
+  min-height: 100dvh;
+}
+
+.finder--embed .live-banner,
+html[data-embed='true'] .live-banner,
+html.embed .live-banner {
+  display: none;
+}
+
+.finder--embed .hero-wash {
+  min-height: 100dvh;
+}
+
+.finder--embed .results-chrome > div,
+.finder--embed .results-main,
+.finder--embed .results-footer > div {
+  max-width: min(1100px, 100%);
+}
+
+.finder--embed .results-footer {
+  padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+}
+
+@media (min-width: 768px) {
+  .finder--embed .results-map {
+    top: 7.75rem;
+    height: calc(100dvh - 8.5rem);
+  }
+}
+
 .live-banner p {
   letter-spacing: -0.005em;
 }

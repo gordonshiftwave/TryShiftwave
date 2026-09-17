@@ -2,15 +2,40 @@ import type { LocationRecord } from '../types'
 import { publicFile } from '../publicFile'
 import { isPublicQualified, parseCsv, parseRow } from './parse'
 
+const LOCAL_FEED = 'locations.json'
+
 /**
  * Load public-qualified try-spots.
  *
- * Default feed is the committed snapshot in /public/locations.json.
- * Point VITE_LOCATIONS_URL at a later sheet export (JSON or CSV) to refresh
- * without a code change. Only rows that pass the qualification gate are returned.
+ * Prefers `VITE_LOCATIONS_URL` (CORS-enabled JSON or CSV matching the schema
+ * in INTEGRATION.md). If that fetch or parse fails, falls back to the
+ * committed snapshot at `public/locations.json`. Only rows that pass the
+ * qualification gate are returned.
  */
 export async function loadLocations(): Promise<LocationRecord[]> {
-  const url = resolveLocationsUrl()
+  const primary = resolveLocationsUrl()
+  const fallback = publicFile(LOCAL_FEED)
+  const urls = primary === fallback ? [primary] : [primary, fallback]
+
+  let lastError: unknown
+  for (const url of urls) {
+    try {
+      return await loadFromUrl(url)
+    } catch (err) {
+      lastError = err
+      if (url !== fallback) {
+        console.warn(
+          `[try-shiftwave] Locations feed failed (${url}); falling back to ${fallback}`,
+          err,
+        )
+      }
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error('Could not load locations')
+}
+
+async function loadFromUrl(url: string): Promise<LocationRecord[]> {
   const res = await fetch(url, { cache: 'no-cache' })
   if (!res.ok) {
     throw new Error(`Could not load locations (${res.status})`)
@@ -22,9 +47,7 @@ export async function loadLocations(): Promise<LocationRecord[]> {
     contentType.includes('text/csv') ||
     contentType.includes('spreadsheet')
 
-  const rows = looksCsv
-    ? parseCsv(await res.text())
-    : extractJsonRows(await res.json())
+  const rows = looksCsv ? parseCsv(await res.text()) : extractJsonRows(await res.json())
 
   const seen = new Set<string>()
   const places: LocationRecord[] = []
@@ -54,7 +77,7 @@ function extractJsonRows(payload: unknown): Record<string, unknown>[] {
 
 function resolveLocationsUrl(): string {
   const configured = import.meta.env.VITE_LOCATIONS_URL?.trim()
-  if (!configured) return publicFile('locations.json')
+  if (!configured) return publicFile(LOCAL_FEED)
   if (/^[a-z][a-z0-9+.-]*:/i.test(configured)) return configured
   return publicFile(configured)
 }

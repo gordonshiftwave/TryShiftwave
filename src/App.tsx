@@ -9,6 +9,7 @@ import { formatAddress } from './data/parse'
 import { milesBetween, prefersReducedMotion } from './geo/distance'
 import { geocodeQuery, reverseGeocode } from './geo/geocode'
 import { statesMatch } from './geo/states'
+import { readEmbedMode } from './embed'
 import {
   DEFAULT_RADIUS_MILES,
   NEARBY_RADIUS_OPTIONS,
@@ -20,6 +21,7 @@ import {
 type Status = 'idle' | 'loading' | 'searching' | 'locating' | 'ready' | 'error'
 
 export function App() {
+  const embed = readEmbedMode()
   const [places, setPlaces] = useState<LocationRecord[]>([])
   const [placesReady, setPlacesReady] = useState(false)
   const [loadFailed, setLoadFailed] = useState(false)
@@ -199,7 +201,7 @@ export function App() {
     : ''
 
   return (
-    <div className="min-h-screen">
+    <div className={embed ? 'finder finder--embed min-h-dvh' : 'finder min-h-screen'}>
       {showingResults && (
         <a
           href="#results"
@@ -209,10 +211,11 @@ export function App() {
         </a>
       )}
 
-      <LiveListBanner />
+      {!embed && <LiveListBanner />}
 
       {showingResults ? (
         <ResultsView
+          embed={embed}
           query={query}
           onQueryChange={setQuery}
           onSearch={(text) => void runSearch(text)}
@@ -241,6 +244,7 @@ export function App() {
         />
       ) : (
         <LandingView
+          embed={embed}
           query={query}
           onQueryChange={setQuery}
           onSearch={(text) => void runSearch(text)}
@@ -272,6 +276,7 @@ function LiveListBanner() {
 }
 
 type LandingViewProps = {
+  embed: boolean
   query: string
   onQueryChange: (value: string) => void
   onSearch: (query: string) => void
@@ -286,6 +291,7 @@ type LandingViewProps = {
 const RESET_LINES = ['Reset Mentally.', 'Reset Physically.', 'Reset Emotionally.'] as const
 
 function LandingView({
+  embed,
   query,
   onQueryChange,
   onSearch,
@@ -297,7 +303,13 @@ function LandingView({
   loadFailed,
 }: LandingViewProps) {
   return (
-    <div className="hero-wash flex min-h-[calc(100dvh-3.25rem)] flex-col">
+    <div
+      className={
+        embed
+          ? 'hero-wash flex min-h-dvh flex-col'
+          : 'hero-wash flex min-h-[calc(100dvh-3.25rem)] flex-col'
+      }
+    >
       <main className="mx-auto flex w-full max-w-[46rem] flex-1 flex-col items-center justify-center px-5 py-10 text-center sm:py-16 md:py-20">
         <WaveMark className="h-9 w-[6.75rem] text-cta sm:h-11 sm:w-[8.25rem]" title="Shiftwave" />
         <h1 className="mt-7 font-display text-[2.05rem] font-semibold leading-[1.3] tracking-normal text-ink sm:text-[2.75rem] md:text-[3.15rem]">
@@ -330,7 +342,7 @@ function LandingView({
         )}
       </main>
 
-      <footer className="px-5 py-6 text-center text-sm text-ink-faint">
+      <footer className="standalone-footer px-5 py-6 text-center text-sm text-ink-faint">
         Pins are qualified public try-spots only — not every purchaser.
       </footer>
     </div>
@@ -338,6 +350,7 @@ function LandingView({
 }
 
 type ResultsViewProps = {
+  embed: boolean
   query: string
   onQueryChange: (value: string) => void
   onSearch: (query: string) => void
@@ -366,6 +379,7 @@ type ResultsViewProps = {
 }
 
 function ResultsView({
+  embed,
   query,
   onQueryChange,
   onSearch,
@@ -430,7 +444,7 @@ function ResultsView({
         </div>
       </header>
 
-      <main className="reveal mx-auto grid max-w-[1100px] gap-5 overflow-x-hidden px-4 py-5 sm:px-5 sm:py-6 md:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] md:items-start md:gap-7 md:px-8 md:py-8 lg:gap-8">
+      <main className="results-main reveal mx-auto grid max-w-[1100px] gap-5 overflow-x-hidden px-4 py-5 sm:px-5 sm:py-6 md:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] md:items-start md:gap-7 md:px-8 md:py-8 lg:gap-8">
         <section id="results" className="order-2 min-w-0 md:order-1">
           <div className="mb-4 sm:mb-5">
             <h2 className="font-display text-[1.45rem] font-semibold leading-[1.3] tracking-normal text-ink sm:text-[1.7rem]">
@@ -499,7 +513,7 @@ function ResultsView({
           </ul>
         </section>
 
-        <section className="order-1 min-h-[220px] min-w-0 overflow-hidden h-[36vh] sm:h-[42vh] sm:min-h-[280px] md:sticky md:top-32 md:order-2 md:h-[calc(100dvh-9.5rem)] md:min-h-[28rem] md:aspect-auto">
+        <section className="results-map order-1 min-h-[220px] min-w-0 overflow-hidden h-[36vh] sm:h-[42vh] sm:min-h-[280px] md:sticky md:top-32 md:order-2 md:h-[calc(100dvh-9.5rem)] md:min-h-[28rem] md:aspect-auto">
           <MapCanvas
             locations={ranked}
             origin={origin}
@@ -512,12 +526,15 @@ function ResultsView({
         </section>
       </main>
 
-      <footer className="border-t border-line">
+      <footer className="results-footer border-t border-line">
         <div className="mx-auto flex max-w-[1100px] flex-col gap-2 px-5 py-8 text-sm text-ink-faint md:flex-row md:items-center md:justify-between md:px-8">
           <p>Pins are qualified public try-spots only — not every purchaser.</p>
-          <p>
-            Map {origin ? `centered on ${origin.label}` : 'of the United States'} · {ranked.length} listed
-          </p>
+          {!embed && (
+            <p>
+              Map {origin ? `centered on ${origin.label}` : 'of the United States'} · {ranked.length}{' '}
+              listed
+            </p>
+          )}
         </div>
       </footer>
     </>
