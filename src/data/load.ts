@@ -10,7 +10,8 @@ const LOCAL_FEED = 'locations.json'
  * Prefers `VITE_LOCATIONS_URL` (CORS-enabled JSON or CSV matching the schema
  * in INTEGRATION.md). If that fetch or parse fails, falls back to the
  * committed snapshot at `public/locations.json`. Only rows that pass the
- * qualification gate are returned.
+ * qualification gate (qualified, public-facing, demo consent, visit_model
+ * not `none`) are returned.
  */
 export async function loadLocations(): Promise<LocationRecord[]> {
   const primary = resolveLocationsUrl()

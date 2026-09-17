@@ -3,7 +3,8 @@
  *
  * Intake tag `sw-business` never auto-publishes.
  * Exclude tag `sw-finder-exclude` is a hard no.
- * Public copy only: status === "approved" && consent === true.
+ * Public copy only: status === "approved" && consent === true && visit_model !== "none".
+ * Appointment rows publish with visit_model=appointment (not hidden).
  */
 
 export const INTAKE_TAG = 'sw-business'
@@ -11,6 +12,7 @@ export const EXCLUDE_TAG = 'sw-finder-exclude'
 export const STAGING_SOURCE = 'shopify_staging'
 export const DEFAULT_STAGING_PATH = 'ops/staging.json'
 export const DEFAULT_PUBLIC_PATH = 'public/locations.json'
+export const LISTABLE_VISIT_MODELS = ['walk_in', 'appointment']
 
 const HUMAN_FIELDS = [
   'status',
@@ -18,6 +20,7 @@ const HUMAN_FIELDS = [
   'qualified',
   'public_facing',
   'walk_in_ok',
+  'visit_model',
   'lat',
   'lng',
   'hours',
@@ -36,6 +39,21 @@ const HUMAN_FIELDS = [
   'phone',
   'email',
 ]
+
+/** Reviewer-owned fields: re-import always keeps a filled previous value. */
+const QUALIFICATION_FIELDS = new Set([
+  'status',
+  'consent',
+  'qualified',
+  'public_facing',
+  'walk_in_ok',
+  'visit_model',
+  'lat',
+  'lng',
+  'reviewed_by',
+  'reviewed_at',
+  'hubspot_id',
+])
 
 export function parseTags(value) {
   return String(value ?? '')
@@ -216,6 +234,7 @@ export function csvOrdersToStagingRows(csvRows) {
       qualified: false,
       public_facing: false,
       walk_in_ok: false,
+      visit_model: 'none',
       shopify_order_id: orderId,
       shopify_order_name: cell(raw, 'Name'),
       shopify_tags: tags,
@@ -264,7 +283,10 @@ export function mergeStagingRows(incoming, existing) {
 
     const next = { ...row }
     for (const field of HUMAN_FIELDS) {
-      if (isFilled(prev[field]) && (field === 'status' || field === 'consent' || field === 'qualified' || field === 'public_facing' || field === 'walk_in_ok' || field === 'lat' || field === 'lng' || field === 'reviewed_by' || field === 'reviewed_at' || field === 'hubspot_id' || !isFilled(row[field]))) {
+      if (
+        isFilled(prev[field]) &&
+        (QUALIFICATION_FIELDS.has(field) || !isFilled(row[field]))
+      ) {
         next[field] = prev[field]
       }
     }
@@ -306,6 +328,8 @@ export function isPublishable(row) {
   if (row.exclude === true) return false
   if (hasTag(row.shopify_tags ?? [], EXCLUDE_TAG)) return false
   if (!String(row.name ?? '').trim()) return false
+  const model = String(row.visit_model ?? '').trim()
+  if (!LISTABLE_VISIT_MODELS.includes(model)) return false
   const lat = Number(row.lat)
   const lng = Number(row.lng)
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false
@@ -315,6 +339,7 @@ export function isPublishable(row) {
 
 export function toPublicLocation(row) {
   const hours = String(row.hours ?? '').trim()
+  const visitModel = String(row.visit_model ?? '').trim() === 'appointment' ? 'appointment' : 'walk_in'
   return {
     id: row.id,
     name: String(row.name ?? '').trim(),
@@ -333,7 +358,8 @@ export function toPublicLocation(row) {
     qualified: row.qualified === true,
     public_facing: row.public_facing === true,
     demo_consent: row.consent === true,
-    walk_in_ok: row.walk_in_ok === true,
+    walk_in_ok: visitModel === 'walk_in',
+    visit_model: visitModel,
     notes: String(row.notes ?? '').trim(),
   }
 }
@@ -373,7 +399,7 @@ export function buildPublicFile(locations, { replace = true, existing = null, up
     source: 'shopify_staging_approved',
     demo: false,
     updated,
-    filter: 'status=approved AND consent=true (sw-finder-exclude never published)',
+    filter: 'status=approved AND consent=true AND visit_model!=none (appointment publishes with flag; sw-finder-exclude never published)',
     count: locations.length,
     locations,
   }
@@ -428,7 +454,7 @@ export function printReviewSummary(counts, extraLines = [], log = console.error)
     `  approved:     ${counts.approved}`,
     `  rejected:     ${counts.rejected}`,
     `  excluded:     ${counts.excluded}`,
-    `  publishable:  ${counts.publishable} (approved + consent=true + coordinates)`,
+    `  publishable:  ${counts.publishable} (approved + consent=true + visit_model!=none + coordinates)`,
     ...extraLines,
   ]
   log(lines.join('\n'))

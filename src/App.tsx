@@ -483,7 +483,7 @@ function ResultsView({
             <div className="mb-4">
               <EmptyState
                 title="Nothing public nearby — yet"
-                body={`We don’t have a qualified walk-in try-spot within ${radius} miles of ${originLabel}. These are the closest qualified locations on the live partner list.`}
+                body={`We don’t have a qualified try-spot within ${radius} miles of ${originLabel}. These are the closest qualified locations on the live partner list.`}
               />
             </div>
           )}
@@ -491,7 +491,7 @@ function ResultsView({
           {noQualified && (
             <EmptyState
               title="No qualified locations"
-              body="Every public pin must be marked qualified, public-facing, demo-consenting, and walk-in appropriate."
+              body="Every public pin must be a qualified, public-facing try-spot with demo consent. Appointment-only partners are listed; excluded spots are not."
             />
           )}
 

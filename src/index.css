@@ -490,6 +490,18 @@ html.embed .live-banner {
   color: var(--color-calm);
 }
 
+.visit-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  line-height: 1.35;
+  color: var(--color-ink-soft);
+}
+
+.visit-label--appointment {
+  color: var(--color-ink-soft);
+}
+
 .radius-chip {
   border-radius: 999px;
   padding: 0.28rem 0.85rem;

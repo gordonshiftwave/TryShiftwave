@@ -35,7 +35,7 @@ if (flags.help || flags.h) {
   console.log(`Usage: node scripts/stage-from-shopify-csv.mjs <shopify-export.csv> [options]
 
   --staging <path>       Staging queue (default: ${DEFAULT_STAGING_PATH})
-  --publish-approved     Copy ONLY status=approved AND consent=true into the public feed
+  --publish-approved     Copy ONLY status=approved AND consent=true AND visit_model!=none into the public feed
   --out <path>           Public JSON dest when --publish-approved (default: ${DEFAULT_PUBLIC_PATH})
   --replace              Replace the public file instead of upserting by id
   --stdout               With --publish-approved, print public JSON instead of writing
@@ -68,7 +68,7 @@ fs.writeFileSync(stagingPath, `${JSON.stringify(staging, null, 2)}\n`)
 const counts = reviewCounts(rows)
 const extra = [`Wrote ${stagingPath}`]
 if (!flags['publish-approved']) {
-  extra.push('Public locations not written (pass --publish-approved to copy approved + consent=true only).')
+  extra.push('Public locations not written (pass --publish-approved to copy approved + consent=true + visit_model!=none only).')
 }
 printReviewSummary(counts, extra, console.error)
 
