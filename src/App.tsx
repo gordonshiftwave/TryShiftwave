@@ -4,7 +4,8 @@ import { LocationCard } from './components/LocationCard'
 import { MapCanvas, type MapFocus } from './components/MapCanvas'
 import { SearchBar } from './components/SearchBar'
 import { WaveMark } from './components/WaveMark'
-import { loadLocations } from './data/load'
+import { feedVisitorMessage } from './data/feedCopy'
+import { loadLocations, type FeedStatus } from './data/load'
 import { formatAddress } from './data/parse'
 import { milesBetween, prefersReducedMotion } from './geo/distance'
 import { geocodeQuery, reverseGeocode } from './geo/geocode'
@@ -24,7 +25,7 @@ export function App() {
   const embed = readEmbedMode()
   const [places, setPlaces] = useState<LocationRecord[]>([])
   const [placesReady, setPlacesReady] = useState(false)
-  const [loadFailed, setLoadFailed] = useState(false)
+  const [feedStatus, setFeedStatus] = useState<FeedStatus | 'loading'>('loading')
   const [status, setStatus] = useState<Status>('loading')
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
@@ -38,17 +39,24 @@ export function App() {
   useEffect(() => {
     let cancelled = false
     loadLocations()
-      .then((rows) => {
+      .then((feed) => {
         if (cancelled) return
-        setPlaces(rows)
+        setPlaces(feed.places)
+        setFeedStatus(feed.status)
         setPlacesReady(true)
+        if (feed.status === 'unavailable') {
+          setError(feedVisitorMessage('unavailable'))
+          setStatus('error')
+          return
+        }
         setStatus((current) => (current === 'searching' || current === 'locating' ? current : 'ready'))
       })
       .catch((err: unknown) => {
         if (cancelled) return
-        setLoadFailed(true)
+        setFeedStatus('unavailable')
+        setPlaces([])
         setPlacesReady(true)
-        setError(err instanceof Error ? err.message : 'Could not load locations')
+        setError(err instanceof Error ? err.message : feedVisitorMessage('unavailable'))
         setStatus('error')
       })
     return () => {
@@ -228,8 +236,8 @@ export function App() {
           resultLabel={!placesReady ? 'Loading try-spots…' : resultLabel}
           radius={radius}
           onRadius={setRadius}
-          loadFailed={loadFailed}
-          noQualified={placesReady && !loadFailed && places.length === 0}
+          feedStatus={feedStatus}
+          noQualified={placesReady && feedStatus === 'ok' && places.length === 0}
           emptyNearby={emptyNearby}
           originLabel={origin?.label}
           list={list}
@@ -253,7 +261,7 @@ export function App() {
           locating={status === 'locating'}
           error={error}
           geoNote={geoNote}
-          loadFailed={loadFailed}
+          feedStatus={feedStatus}
         />
       )}
     </div>
@@ -285,7 +293,7 @@ type LandingViewProps = {
   locating: boolean
   error: string | null
   geoNote: string | null
-  loadFailed: boolean
+  feedStatus: FeedStatus | 'loading'
 }
 
 const RESET_LINES = ['Reset Mentally.', 'Reset Physically.', 'Reset Emotionally.'] as const
@@ -300,7 +308,7 @@ function LandingView({
   locating,
   error,
   geoNote,
-  loadFailed,
+  feedStatus,
 }: LandingViewProps) {
   return (
     <div
@@ -333,11 +341,9 @@ function LandingView({
           />
         </div>
 
-        {(error || geoNote || loadFailed) && (
-            <p className="mt-5 max-w-md text-sm text-ink-soft" role="status">
-            {error ||
-              geoNote ||
-              'Locations didn’t load. Check that locations.json is present, or that VITE_LOCATIONS_URL points at the live sheet export.'}
+        {(error || geoNote || feedVisitorMessage(feedStatus)) && (
+          <p className="mt-5 max-w-md text-sm text-ink-soft" role="status">
+            {error || geoNote || feedVisitorMessage(feedStatus)}
           </p>
         )}
       </main>
@@ -363,7 +369,7 @@ type ResultsViewProps = {
   resultLabel: string
   radius: number
   onRadius: (miles: number) => void
-  loadFailed: boolean
+  feedStatus: FeedStatus | 'loading'
   noQualified: boolean
   emptyNearby: boolean
   originLabel?: string
@@ -392,7 +398,7 @@ function ResultsView({
   resultLabel,
   radius,
   onRadius,
-  loadFailed,
+  feedStatus,
   noQualified,
   emptyNearby,
   originLabel,
@@ -472,10 +478,24 @@ function ResultsView({
             </p>
           )}
 
-          {loadFailed && (
+          {feedStatus === 'unavailable' && (
             <EmptyState
-              title="Locations didn’t load"
-              body="Check that locations.json is present, or that VITE_LOCATIONS_URL points at the live sheet export."
+              title="Try-spot list didn’t load"
+              body={feedVisitorMessage('unavailable') ?? ''}
+            />
+          )}
+
+          {feedStatus === 'empty' && (
+            <EmptyState
+              title="No public try-spots listed"
+              body={feedVisitorMessage('empty') ?? ''}
+            />
+          )}
+
+          {feedStatus === 'invalid' && (
+            <EmptyState
+              title="Try-spot list couldn’t be read"
+              body={feedVisitorMessage('invalid') ?? ''}
             />
           )}
 

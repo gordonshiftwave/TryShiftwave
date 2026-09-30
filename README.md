@@ -13,7 +13,7 @@ Embed preview: [https://gordonshiftwave.github.io/TryShiftwave/?embed=1](https:/
 
 Pushes to `main` run `.github/workflows/deploy-pages.yml` (`npm ci`, `npm run build`, deploy `dist/` via GitHub Pages). Vite `base` defaults to `/TryShiftwave/` for this project site. Override with `VITE_BASE` (`/` or `/pages/find-shiftwave/`) when hosting on shiftwave.co — do not hard-code github.io.
 
-If that URL 404s, Gordon needs one click: **Settings → Pages → Build and deployment → Source: GitHub Actions**. Then open **Actions → Deploy GitHub Pages** and **Re-run failed jobs**. The first run’s `build` job already succeeded; `deploy` returns 404 until Pages is enabled (this token cannot flip that setting via the API).
+If that URL 404s, the GitHub repo admin enables Pages once: **Settings → Pages → Build and deployment → Source: GitHub Actions**, then re-runs **Actions → Deploy GitHub Pages**. That is a one-time repo setting. Ongoing website embed, Shopify, DNS, and any other host are Candice’s. See [`CANDICE-HANDOFF.md`](CANDICE-HANDOFF.md).
 
 [`public/locations.json`](public/locations.json) is the **published** snapshot of qualified try-spots (historical source: the partner *Shiftwave Clinic & Commercial List*, “Can we send people there to Demo?” = YES). The standing intake path is a **system + named roles** — Shopify tagging → staging queue → Review owner (role) qualify → this file (or `VITE_LOCATIONS_URL`) — see [`OPS.md`](OPS.md) and [`INTEGRATION.md`](INTEGRATION.md). No Shopify in the client, no Google write access, no secrets. Do not assign review to Dani (or any one person) by default.
 
@@ -55,7 +55,7 @@ Brand tokens match [shiftwave.co](https://shiftwave.co/) for merge — Montserra
 
 Runtime file: [`public/locations.json`](public/locations.json) (fallback snapshot).
 
-The loader lives in `src/data/`. It **prefers** `VITE_LOCATIONS_URL` when set, then falls back to the committed JSON if the remote feed fails. It accepts **JSON or CSV**. Field names from the sheet (`address` instead of `street`, full state names, free-form categories) are mapped in `parse.ts`. Street lines and hours are **not invented** — empty street stays empty; missing hours display as **Hours unavailable** (never “Call for hours”). Schema for the website team: [`INTEGRATION.md`](INTEGRATION.md).
+The loader lives in `src/data/`. It loads `VITE_LOCATIONS_URL` when set. If that remote feed fails, is empty, or is invalid, the finder shows an empty state and does **not** restore the bundled snapshot. With no remote URL, it loads the committed JSON. It accepts **JSON or CSV**. Field names from the sheet (`address` instead of `street`, full state names, free-form categories) are mapped in `parse.ts`. Missing qualification flags and a missing `visit_model` do not default to listed. Street lines and hours are **not invented** — empty street stays empty; missing hours display as **Hours unavailable** (never “Call for hours”). Schema for the website team: [`INTEGRATION.md`](INTEGRATION.md). Handoff for the website owner: [`CANDICE-HANDOFF.md`](CANDICE-HANDOFF.md). Day-to-day list changes: [`OPS-MAINTENANCE.md`](OPS-MAINTENANCE.md).
 
 Public hours/phones were enriched from official sites and directories (42/63 hours, 57/63 phones). Names still unresolved for hours (and some phones): Intentional Wellness Institute, Jill Sumiyasu, Keller Street Co-Work, Lit From Within, The Portal, Transformations, Maureen Whatley, Lovetree Alchemy, Kansas City Neuroplasticity Institute, Chris Collins, The Menopause Method, Disney Family Therapy, Dr. Karen Wright, Dr. Tim Patel, Halo Mental Health, Dr. Frank Lipman, Libertas Cryo, Dr. Anette Scott, Lucia Gadney, Sonder Psychotherapy, Heike Tabatabai.
 
@@ -117,7 +117,7 @@ Header row of the Google Sheet should use these names (snake_case). Aliases such
 | `demo_consent` | yes | Partner agrees to receive demo visitors |
 | `walk_in_ok` | compat | True when `visit_model` is `walk_in`. Appointment is not a hide. |
 | `visit_model` | yes | `walk_in` \| `appointment` \| `none`. `none` is never listed. Appointment publishes with the flag. |
-| `notes` | optional | Internal; not shown in the UI |
+| `notes` | omit | Not public. Publish leaves this out. |
 
 Boolean cells accept `TRUE`, `yes`, `1`, `x`.
 

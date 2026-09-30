@@ -109,7 +109,10 @@
         "website": { "type": "string" },
         "category": { "type": "string" },
         "region": { "type": "string" },
-        "notes": { "type": "string" },
+        "notes": {
+          "type": "string",
+          "description": "Staging/internal only. Publish never copies this field into public JSON."
+        },
         "shopify_order_id": { "type": "string" },
         "shopify_order_name": { "type": "string", "description": "Admin order name, e.g. #1042." },
         "shopify_tags": {

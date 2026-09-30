@@ -38,6 +38,12 @@ export function applyEmbedDocumentState(embed = readEmbedMode()): boolean {
   return embed
 }
 
+/**
+ * Parent pages should keep the iframe inside this range so forms below the
+ * finder stay on the page. Do not size the frame to 100vh.
+ */
+export const EMBED_FRAME_HEIGHT = { min: 640, preferred: 720, max: 880 } as const
+
 /** Lets a parent page (Shopify section) size the iframe to this document. */
 export function startEmbedResizeReporter(): () => void {
   if (typeof window === 'undefined' || window.parent === window) {
@@ -48,7 +54,15 @@ export function startEmbedResizeReporter(): () => void {
     const height = Math.ceil(
       Math.max(document.documentElement.scrollHeight, document.body?.scrollHeight ?? 0),
     )
-    window.parent.postMessage({ source: 'try-shiftwave', type: 'resize', height }, '*')
+    window.parent.postMessage(
+      {
+        source: 'try-shiftwave',
+        type: 'resize',
+        height,
+        clamp: EMBED_FRAME_HEIGHT,
+      },
+      '*',
+    )
   }
 
   send()

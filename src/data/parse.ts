@@ -138,10 +138,19 @@ export function hoursAreUnavailable(value: string): boolean {
   return !value.trim() || /^hours unavailable$/i.test(value.trim())
 }
 
-function num(value: unknown): number | null {
-  if (typeof value === 'number' && Number.isFinite(value)) return value
-  const n = Number(String(value ?? '').trim())
+/** Blank, null, and non-numeric values stay null. They must not become 0. */
+export function parseCoordinate(value: unknown): number | null {
+  if (value == null || typeof value === 'boolean') return null
+  if (typeof value === 'string' && value.trim() === '') return null
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null
+  const text = String(value).trim()
+  if (!text) return null
+  const n = Number(text)
   return Number.isFinite(n) ? n : null
+}
+
+function num(value: unknown): number | null {
+  return parseCoordinate(value)
 }
 
 function categoryOf(value: unknown): string {
@@ -149,7 +158,12 @@ function categoryOf(value: unknown): string {
 }
 
 export function isPublicQualified(row: LocationRecord): boolean {
-  return row.qualified && row.publicFacing && row.demoConsent && row.visitModel !== 'none'
+  return (
+    row.qualified === true &&
+    row.publicFacing === true &&
+    row.demoConsent === true &&
+    (row.visitModel === 'walk_in' || row.visitModel === 'appointment')
+  )
 }
 
 export function parseVisitModel(value: unknown, walkInOk?: unknown): VisitModel {
@@ -175,9 +189,10 @@ export function parseVisitModel(value: unknown, walkInOk?: unknown): VisitModel 
     return 'none'
   }
   if (VISIT_MODELS.includes(raw as VisitModel)) return raw as VisitModel
-  // Missing visit_model: do not invent appointment. False walk_in_ok → none (hidden).
-  if (walkInOk == null || walkInOk === '') return 'walk_in'
-  return parseBool(walkInOk) ? 'walk_in' : 'none'
+  // Missing or unknown visit_model does not become walk-in.
+  // walk_in_ok is not a substitute for an explicit visit_model.
+  void walkInOk
+  return 'none'
 }
 
 export function parseRow(
@@ -195,6 +210,7 @@ export function parseRow(
   const name = str(src.name)
   if (lat == null || lng == null || !name) return null
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null
+  if (lat === 0 && lng === 0) return null
 
   const id = str(src.id) || slug(`${name}-${index}`)
   const city = str(src.city)
@@ -202,6 +218,8 @@ export function parseRow(
   const zip = str(src.zip)
   const street = streetLine(str(src.street), str(src.address), city, state, zip)
   const visitModel = parseVisitModel(src.visit_model, src.walk_in_ok)
+  const explicitBool = (value: unknown): boolean =>
+    value == null || value === '' ? false : parseBool(value)
 
   return {
     id,
@@ -218,18 +236,12 @@ export function parseRow(
     website: str(src.website),
     category: categoryOf(src.category),
     region: str(src.region),
-    qualified: src.qualified == null || src.qualified === '' ? true : parseBool(src.qualified),
-    publicFacing:
-      src.public_facing == null || src.public_facing === ''
-        ? true
-        : parseBool(src.public_facing),
-    demoConsent:
-      src.demo_consent == null || src.demo_consent === ''
-        ? true
-        : parseBool(src.demo_consent),
+    qualified: explicitBool(src.qualified),
+    publicFacing: explicitBool(src.public_facing),
+    demoConsent: explicitBool(src.demo_consent),
     walkInOk: visitModel === 'walk_in',
     visitModel,
-    notes: str(src.notes),
+    notes: '',
   }
 }
 

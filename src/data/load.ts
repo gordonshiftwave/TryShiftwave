@@ -4,40 +4,100 @@ import { isPublicQualified, parseCsv, parseRow } from './parse'
 
 const LOCAL_FEED = 'locations.json'
 
-/**
- * Load public-qualified try-spots.
- *
- * Prefers `VITE_LOCATIONS_URL` (CORS-enabled JSON or CSV matching the schema
- * in INTEGRATION.md). If that fetch or parse fails, falls back to the
- * committed snapshot at `public/locations.json`. Only rows that pass the
- * qualification gate (qualified, public-facing, demo consent, visit_model
- * not `none`) are returned.
- */
-export async function loadLocations(): Promise<LocationRecord[]> {
-  const primary = resolveLocationsUrl()
-  const fallback = publicFile(LOCAL_FEED)
-  const urls = primary === fallback ? [primary] : [primary, fallback]
+export type FeedStatus = 'ok' | 'empty' | 'invalid' | 'unavailable'
+export type FeedSource = 'remote' | 'bundled'
 
-  let lastError: unknown
-  for (const url of urls) {
-    try {
-      return await loadFromUrl(url)
-    } catch (err) {
-      lastError = err
-      if (url !== fallback) {
-        console.warn(
-          `[try-shiftwave] Locations feed failed (${url}); falling back to ${fallback}`,
-          err,
-        )
-      }
-    }
-  }
-
-  throw lastError instanceof Error ? lastError : new Error('Could not load locations')
+export type FeedLoad = {
+  places: LocationRecord[]
+  status: FeedStatus
+  dropped: number
+  rawCount: number
+  source: FeedSource
 }
 
-async function loadFromUrl(url: string): Promise<LocationRecord[]> {
-  const res = await fetch(url, { cache: 'no-cache' })
+/**
+ * A failed remote feed must not fall back to the bundled snapshot.
+ * Restoring that snapshot would put withdrawn listings back on the map.
+ * Always returns null.
+ */
+export function fallbackAfterFailure(primary: string, bundled: string): null {
+  // Accept both URLs so the call site stays explicit. Never return either one.
+  // A failed remote feed must not revive withdrawn listings from the snapshot.
+  void primary
+  void bundled
+  return null
+}
+
+export function interpretFeedLoad(input: {
+  source: FeedSource
+  failed: boolean
+  rawCount?: number
+  places?: LocationRecord[]
+  dropped?: number
+}): FeedLoad {
+  if (input.failed) {
+    return {
+      places: [],
+      status: 'unavailable',
+      dropped: 0,
+      rawCount: 0,
+      source: input.source,
+    }
+  }
+  const places = input.places ?? []
+  const rawCount = input.rawCount ?? 0
+  const dropped = input.dropped ?? Math.max(0, rawCount - places.length)
+  let status: FeedStatus = 'ok'
+  if (rawCount === 0) status = 'empty'
+  else if (places.length === 0) status = 'invalid'
+  return { places, status, dropped, rawCount, source: input.source }
+}
+
+/**
+ * Load public-qualified try-spots from one URL.
+ *
+ * Uses `VITE_LOCATIONS_URL` when set, otherwise the committed
+ * `public/locations.json`. A failed or empty remote feed stays empty and
+ * reports a status. It does not revive the bundled snapshot.
+ */
+export async function loadLocations(): Promise<FeedLoad> {
+  const bundled = publicFile(LOCAL_FEED)
+  return loadLocationsFrom(resolveLocationsUrl(), bundled)
+}
+
+export async function loadLocationsFrom(
+  primary: string,
+  bundled: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<FeedLoad> {
+  const source: FeedSource = primary === bundled ? 'bundled' : 'remote'
+  try {
+    const loaded = await loadFromUrl(primary, fetchImpl)
+    const feed = interpretFeedLoad({ source, failed: false, ...loaded })
+    logFeed(feed, primary)
+    return feed
+  } catch (err) {
+    if (fallbackAfterFailure(primary, bundled) !== null) {
+      throw new Error('Bundled snapshot fallback is disabled')
+    }
+    const feed = interpretFeedLoad({ source, failed: true })
+    logFeed(feed, primary, err)
+    return feed
+  }
+}
+
+function logFeed(feed: FeedLoad, url: string, err?: unknown): void {
+  const line = `[try-shiftwave] OPS: feed ${feed.status} source=${feed.source} rows=${feed.rawCount} shown=${feed.places.length} dropped=${feed.dropped} url=${url}`
+  if (feed.status === 'ok' && feed.dropped === 0) return
+  if (feed.status === 'unavailable') console.error(line, err)
+  else console.warn(line)
+}
+
+async function loadFromUrl(
+  url: string,
+  fetchImpl: typeof fetch,
+): Promise<{ places: LocationRecord[]; rawCount: number; dropped: number }> {
+  const res = await fetchImpl(url, { cache: 'no-cache' })
   if (!res.ok) {
     throw new Error(`Could not load locations (${res.status})`)
   }
@@ -52,14 +112,21 @@ async function loadFromUrl(url: string): Promise<LocationRecord[]> {
 
   const seen = new Set<string>()
   const places: LocationRecord[] = []
+  let dropped = 0
   rows.forEach((row, index) => {
     const parsed = parseRow(row, index)
-    if (!parsed || !isPublicQualified(parsed)) return
-    if (seen.has(parsed.id)) return
+    if (!parsed || !isPublicQualified(parsed)) {
+      dropped += 1
+      return
+    }
+    if (seen.has(parsed.id)) {
+      dropped += 1
+      return
+    }
     seen.add(parsed.id)
     places.push(parsed)
   })
-  return places
+  return { places, rawCount: rows.length, dropped }
 }
 
 function extractJsonRows(payload: unknown): Record<string, unknown>[] {
