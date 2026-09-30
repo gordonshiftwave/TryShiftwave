@@ -2,6 +2,8 @@
 
 **Public map = approved rows only.** That is Colin’s rule. A Shopify purchase is a *signal*, not a listing.
 
+Day-to-day add / edit / withdraw / publish steps: [`OPS-MAINTENANCE.md`](OPS-MAINTENANCE.md). Website embed and hosting: [`CANDICE-HANDOFF.md`](CANDICE-HANDOFF.md). Candice owns the website. Gordon is not the website operator.
+
 Intake and review are a **system + named roles**, not a person: Shopify tags → `ops/staging.json` → Review owner (role) → published JSON. Do **not** assign review to Dani (or any one individual) by default. Do not hand-edit `public/locations.json` as the standing process.
 
 ## Tags (Shopify Admin → order)
@@ -35,7 +37,7 @@ sw-business     ops/staging.json   Review owner (role)  public/locations.json
      `walk_in` = listed. `appointment` = listed **with** the flag (finder shows “By appointment — call to schedule”). `none` = do not list / excluded. Appointment is **not** a hide. Shopify does not invent `appointment`.
    - `lat` / `lng` (required to pin; Shopify does not ship coordinates)
 5. Publish: `node scripts/publish-approved.mjs --write`  
-   Copies **only** rows with `status=approved` **and** `consent=true` **and** `visit_model` ≠ `none` into `public/locations.json` (upsert by `id`). Appointment rows publish with `visit_model=appointment`. Use `--replace` only when staging is the full approved set. Use `--stdout` to print JSON without writing. Pending, rejected, excluded, `visit_model=none`, and “business tag but no consent” never go out.
+   Writes a public file that matches the gate: `status=approved` **and** `consent=true` **and** `qualified=true` **and** `public_facing=true` **and** `visit_model` of `walk_in` or `appointment` **and** real coordinates. Default mode **reconciles**: a staging id that no longer passes is **removed** from `public/locations.json` (withdrawn, excluded, rejected, `none`, missing consent, missing qualification, blank coordinates). Historical pins whose ids are not in the staging queue stay only if they still pass the same display gate. Use `--replace` when staging is the full catalog and historical pins should be dropped. Use `--stdout` to print JSON without writing. Staging `notes` are never copied. Blank coordinates are rejected, not turned into `0,0`. An empty result prints `OPS ALERT` on stderr.
 6. Website reads the published JSON. Finder UI does not talk to Shopify.
 
 Re-running API or CSV import **keeps** human review fields. The exclude tag still forces `status=excluded`. Purchase ≠ publish.
@@ -76,7 +78,9 @@ Roles, not a default named individual:
 - Auto-publish from `sw-business`.
 - Treat a purchase as a listing. Review is a **role**, never Dani-by-default.
 - Run `--write` / `--publish-approved` against the sample CSV or API `--demo` fixtures (that would upsert a fake pin).
-- Publish a row with `consent` false, `visit_model=none`, or missing coordinates.
+- Publish a row with `consent` false, `qualified` / `public_facing` not true, `visit_model=none`, or missing coordinates.
+- Copy staging `notes`, Shopify order notes, review fields, or consent evidence into `public/locations.json`.
+- Leave a withdrawn staging id in the public file. Reconcile removes it. Do not rely on the old upsert.
 - Treat appointment-only partners as “hide from the map.” Set `visit_model=appointment` and publish the flag.
 - Assign intake or review to Dani (or any one person) by default.
 - Leave review as “ask Dani to edit the sheet.”

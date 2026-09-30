@@ -18,13 +18,13 @@ import {
   DEFAULT_PUBLIC_PATH,
   DEFAULT_STAGING_PATH,
   applyIncomingStaging,
-  buildPublicFile,
   csvOrdersToStagingRows,
+  formatPublishReport,
   parseArgs,
   parseCsv,
+  planPublicFeed,
   printReviewSummary,
   readJsonIfExists,
-  selectApproved,
 } from './lib/shopify-staging.mjs'
 
 const { positional, flags } = parseArgs(process.argv.slice(2))
@@ -33,9 +33,9 @@ if (flags.help || flags.h) {
   console.log(`Usage: node scripts/stage-from-shopify-csv.mjs <shopify-export.csv> [options]
 
   --staging <path>       Staging queue (default: ${DEFAULT_STAGING_PATH})
-  --publish-approved     Copy ONLY status=approved AND consent=true AND visit_model!=none into the public feed
+  --publish-approved     Copy rows that pass the full publish gate into the public feed
   --out <path>           Public JSON dest when --publish-approved (default: ${DEFAULT_PUBLIC_PATH})
-  --replace              Replace the public file instead of upserting by id
+  --replace              Public file = gated rows only (drops historical pins not in staging)
   --stdout               With --publish-approved, print public JSON instead of writing
   --demo                 Mark the staging file as a sample/fixture
 
@@ -65,27 +65,20 @@ fs.writeFileSync(stagingPath, `${JSON.stringify(staging, null, 2)}\n`)
 
 const extra = [`Wrote ${stagingPath}`]
 if (!flags['publish-approved']) {
-  extra.push('Public locations not written (pass --publish-approved to copy approved + consent=true + visit_model!=none only).')
+  extra.push('Public locations not written (pass --publish-approved to copy rows that pass the full gate).')
 }
 printReviewSummary(counts, extra, console.error)
 
 if (!flags['publish-approved']) process.exit(0)
 
-const approved = selectApproved(rows)
 const outPath = flags.stdout ? null : String(flags.out || DEFAULT_PUBLIC_PATH)
 const existingPublic = outPath && flags.replace !== true ? readJsonIfExists(fs, outPath) : null
-const publicDoc = buildPublicFile(approved, {
-  replace: flags.replace === true || !existingPublic?.locations,
-  existing: existingPublic,
-})
+const plan = planPublicFeed(rows, existingPublic, { replace: flags.replace === true })
 
 if (!outPath) {
-  process.stdout.write(`${JSON.stringify(publicDoc, null, 2)}\n`)
+  process.stdout.write(`${JSON.stringify(plan.doc, null, 2)}\n`)
 } else {
   fs.mkdirSync(path.dirname(outPath) || '.', { recursive: true })
-  fs.writeFileSync(outPath, `${JSON.stringify(publicDoc, null, 2)}\n`)
-  console.log(
-    `Published ${approved.length} approved+consent row(s) → ${outPath}` +
-      (flags.replace === true ? ' (replace)' : existingPublic?.locations ? ' (upsert)' : ' (new file)'),
-  )
+  fs.writeFileSync(outPath, `${JSON.stringify(plan.doc, null, 2)}\n`)
+  console.error(formatPublishReport(plan, { outPath }))
 }

@@ -5,9 +5,14 @@
  * Gate (all required):
  *   status === "approved"
  *   consent === true
+ *   qualified === true
+ *   public_facing === true
  *   visit_model === "walk_in" | "appointment"  (none never publishes)
  *   not excluded / no sw-finder-exclude
- *   name + coordinates present
+ *   name + real coordinates (blank/null/0,0 rejected)
+ *
+ * Default reconciles: staging ids that fail the gate are removed from the
+ * public file. Staging notes are not copied. --replace drops historical pins.
  *
  * Usage:
  *   node scripts/publish-approved.mjs
@@ -22,11 +27,11 @@ import path from 'node:path'
 import {
   DEFAULT_PUBLIC_PATH,
   DEFAULT_STAGING_PATH,
-  buildPublicFile,
+  formatPublishReport,
   parseArgs,
+  planPublicFeed,
   readJsonIfExists,
   reviewCounts,
-  selectApproved,
 } from './lib/shopify-staging.mjs'
 
 const { flags } = parseArgs(process.argv.slice(2))
@@ -38,7 +43,7 @@ if (flags.help || flags.h) {
   --out <path>       Write public JSON (default: stdout; use --write for ${DEFAULT_PUBLIC_PATH})
   --write            Write ${DEFAULT_PUBLIC_PATH} (same as --out ${DEFAULT_PUBLIC_PATH})
   --stdout           Print JSON even if --out/--write is set
-  --replace          Replace the output file with gated rows only (no upsert)
+  --replace          Public file = rows that pass the gate only (drops historical pins not in staging)
 `)
   process.exit(0)
 }
@@ -50,18 +55,14 @@ if (!staging || !Array.isArray(staging.rows)) {
   process.exit(1)
 }
 
-const approved = selectApproved(staging.rows)
 const counts = reviewCounts(staging.rows)
 
 const writeRequested = flags.write === true || typeof flags.out === 'string'
 const outPath = flags.stdout ? null : flags.write === true ? DEFAULT_PUBLIC_PATH : flags.out ? String(flags.out) : null
 
 const existingPublic = outPath && flags.replace !== true ? readJsonIfExists(fs, outPath) : null
-const publicDoc = buildPublicFile(approved, {
-  replace: flags.replace === true || !existingPublic?.locations,
-  existing: existingPublic,
-})
-const json = `${JSON.stringify(publicDoc, null, 2)}\n`
+const plan = planPublicFeed(staging.rows, existingPublic, { replace: flags.replace === true })
+const json = `${JSON.stringify(plan.doc, null, 2)}\n`
 
 if (!outPath || flags.stdout === true) {
   process.stdout.write(json)
@@ -73,15 +74,10 @@ if (outPath) {
 }
 
 console.error(
-  [
-    `Publish gate: status=approved AND consent=true AND visit_model!=none`,
-    `  staging:      ${stagingPath} (${counts.total} rows, ${counts.needs_review} need review)`,
-    `  published:    ${approved.length}`,
-    `  skipped:      ${counts.total - approved.length} (pending/rejected/excluded/none/no consent/no coordinates)`,
-    outPath ? `  wrote:        ${outPath}${flags.replace === true ? ' (replace)' : existingPublic?.locations ? ' (upsert)' : ''}` : '  wrote:        stdout',
-  ].join('\n'),
+  formatPublishReport(plan, { stagingPath, outPath }) +
+    `\n  need review:  ${counts.needs_review}`,
 )
 
-if (writeRequested && approved.length === 0) {
-  console.error('No rows passed the gate. Public feed not filled from Shopify tags alone.')
+if (writeRequested && plan.approvedCount === 0) {
+  console.error('OPS ALERT: no staging rows passed the gate. Public feed was not filled from Shopify tags alone.')
 }

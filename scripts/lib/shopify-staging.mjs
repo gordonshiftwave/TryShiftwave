@@ -429,6 +429,42 @@ export function reviewCounts(rows) {
   return counts
 }
 
+/**
+ * A coordinate that was blank, null, or non-numeric must not become 0.
+ * `Number(null)` and `Number('')` are 0 — that coercion is rejected here.
+ */
+export function parseCoordinate(value) {
+  if (value == null || typeof value === 'boolean') return null
+  if (typeof value === 'string' && value.trim() === '') return null
+  const n = typeof value === 'number' ? value : Number(String(value).trim())
+  if (!Number.isFinite(n)) return null
+  return n
+}
+
+/** Reject blank/null and Null Island (0,0), which is what coerced blanks look like. */
+export function validCoordinatePair(latRaw, lngRaw) {
+  const lat = parseCoordinate(latRaw)
+  const lng = parseCoordinate(lngRaw)
+  if (lat == null || lng == null) return null
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null
+  if (lat === 0 && lng === 0) return null
+  return { lat, lng }
+}
+
+/**
+ * Same display rules the browser uses, plus the staging-only checks in
+ * `isPublishable`. A public row that fails this is not listable.
+ */
+export function isPublicRecordListable(loc) {
+  if (!loc || typeof loc !== 'object') return false
+  if (!String(loc.name ?? '').trim()) return false
+  if (loc.qualified !== true || loc.public_facing !== true || loc.demo_consent !== true) return false
+  const model = String(loc.visit_model ?? '').trim()
+  if (!LISTABLE_VISIT_MODELS.includes(model)) return false
+  if (!validCoordinatePair(loc.lat, loc.lng)) return false
+  return true
+}
+
 export function isPublishable(row) {
   if (!row || row.status !== 'approved') return false
   if (row.consent !== true) return false
@@ -437,42 +473,149 @@ export function isPublishable(row) {
   if (!String(row.name ?? '').trim()) return false
   const model = String(row.visit_model ?? '').trim()
   if (!LISTABLE_VISIT_MODELS.includes(model)) return false
-  const lat = Number(row.lat)
-  const lng = Number(row.lng)
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return false
-  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return false
+  if (row.qualified !== true || row.public_facing !== true) return false
+  if (!validCoordinatePair(row.lat, row.lng)) return false
   return true
 }
 
+const PUBLIC_LOCATION_KEYS = [
+  'id',
+  'name',
+  'street',
+  'city',
+  'state',
+  'zip',
+  'lat',
+  'lng',
+  'phone',
+  'email',
+  'hours',
+  'website',
+  'category',
+  'region',
+  'qualified',
+  'public_facing',
+  'demo_consent',
+  'walk_in_ok',
+  'visit_model',
+]
+
+/** Public JSON allowlist. Staging notes, order ids, and review fields are omitted. */
+export function sanitizePublicLocation(loc) {
+  const out = {}
+  for (const key of PUBLIC_LOCATION_KEYS) {
+    if (loc && loc[key] !== undefined) out[key] = loc[key]
+  }
+  return out
+}
+
 export function toPublicLocation(row) {
+  if (!isPublishable(row)) return null
+  const coords = validCoordinatePair(row.lat, row.lng)
   const hours = String(row.hours ?? '').trim()
-  const visitModel = String(row.visit_model ?? '').trim() === 'appointment' ? 'appointment' : 'walk_in'
-  return {
+  const visitModel = String(row.visit_model ?? '').trim()
+  return sanitizePublicLocation({
     id: row.id,
     name: String(row.name ?? '').trim(),
     street: String(row.street ?? '').trim(),
     city: String(row.city ?? '').trim(),
     state: String(row.state ?? '').trim(),
     zip: String(row.zip ?? '').trim(),
-    lat: Number(row.lat),
-    lng: Number(row.lng),
+    lat: coords.lat,
+    lng: coords.lng,
     phone: String(row.phone ?? '').trim(),
     email: String(row.email ?? '').trim(),
     hours: hours && !/^call for hours$/i.test(hours) ? hours : 'Hours unavailable',
     website: String(row.website ?? '').trim(),
     category: String(row.category ?? '').trim(),
     region: String(row.region ?? '').trim(),
-    qualified: row.qualified === true,
-    public_facing: row.public_facing === true,
-    demo_consent: row.consent === true,
+    qualified: true,
+    public_facing: true,
+    demo_consent: true,
     walk_in_ok: visitModel === 'walk_in',
     visit_model: visitModel,
-    notes: String(row.notes ?? '').trim(),
-  }
+  })
 }
 
 export function selectApproved(rows) {
-  return rows.filter(isPublishable).map(toPublicLocation)
+  return (rows ?? []).map(toPublicLocation).filter(Boolean)
+}
+
+/**
+ * Why a staging row failed the publish gate. One bucket per row, same order as isPublishable.
+ */
+export function gateDiagnostics(rows) {
+  const counts = {
+    total: 0,
+    publishable: 0,
+    blocked_status: 0,
+    blocked_consent: 0,
+    blocked_exclude: 0,
+    blocked_name: 0,
+    blocked_visit_model: 0,
+    blocked_qualification: 0,
+    blocked_coordinates: 0,
+  }
+  for (const row of rows ?? []) {
+    counts.total += 1
+    if (!row || row.status !== 'approved') {
+      counts.blocked_status += 1
+      continue
+    }
+    if (row.consent !== true) {
+      counts.blocked_consent += 1
+      continue
+    }
+    if (row.exclude === true || hasTag(row.shopify_tags ?? [], EXCLUDE_TAG)) {
+      counts.blocked_exclude += 1
+      continue
+    }
+    if (!String(row.name ?? '').trim()) {
+      counts.blocked_name += 1
+      continue
+    }
+    if (!LISTABLE_VISIT_MODELS.includes(String(row.visit_model ?? '').trim())) {
+      counts.blocked_visit_model += 1
+      continue
+    }
+    if (row.qualified !== true || row.public_facing !== true) {
+      counts.blocked_qualification += 1
+      continue
+    }
+    if (!validCoordinatePair(row.lat, row.lng)) {
+      counts.blocked_coordinates += 1
+      continue
+    }
+    counts.publishable += 1
+  }
+  return counts
+}
+
+/**
+ * Approved rows replace matching ids. Staging ids that are no longer publishable
+ * are removed from the public file. Public ids that are not in this staging queue
+ * stay only when they still pass the display gate (historical sheet pins).
+ */
+export function reconcilePublicLocations(approved, existingLocations, stagingIds) {
+  const approvedList = (approved ?? []).filter(Boolean)
+  const stagingSet = new Set(stagingIds ?? [])
+  const approvedIds = new Set(approvedList.map((loc) => loc.id))
+  const kept = []
+  const removedIds = []
+  for (const loc of existingLocations ?? []) {
+    if (!loc || typeof loc !== 'object' || !loc.id) continue
+    if (approvedIds.has(loc.id)) continue
+    if (stagingSet.has(loc.id) || !isPublicRecordListable(loc)) {
+      removedIds.push(loc.id)
+      continue
+    }
+    kept.push(sanitizePublicLocation(loc))
+  }
+  return {
+    locations: [...kept, ...approvedList.map((loc) => sanitizePublicLocation(loc))],
+    removedIds,
+    keptHistorical: kept.length,
+  }
 }
 
 export function buildStagingFile(rows, { demo = false, updated = today() } = {}) {
@@ -489,27 +632,89 @@ export function buildStagingFile(rows, { demo = false, updated = today() } = {})
   }
 }
 
-export function buildPublicFile(locations, { replace = true, existing = null, updated = today() } = {}) {
-  if (!replace && existing && Array.isArray(existing.locations)) {
-    const byId = new Map(existing.locations.map((loc) => [loc.id, loc]))
-    for (const loc of locations) byId.set(loc.id, loc)
-    const merged = [...byId.values()]
+const PUBLIC_FILTER =
+  'status=approved AND consent=true AND qualified=true AND public_facing=true AND visit_model in (walk_in, appointment) AND valid coordinates. Blank coordinates are rejected (not coerced to 0,0). Staging notes are not copied.'
+
+/**
+ * Build the public feed from staging rows.
+ * Default reconciles: withdrawn/excluded/rejected/unqualified ids are removed.
+ * `--replace` (replace: true) drops historical pins that are not in the approved set.
+ * Pass every staging row id so a row that no longer passes the gate cannot linger.
+ */
+export function planPublicFeed(stagingRows, existingPublic, { replace = false, updated = today() } = {}) {
+  const rows = Array.isArray(stagingRows) ? stagingRows : []
+  const approved = selectApproved(rows)
+  const stagingIds = rows.map((row) => row?.id).filter((id) => typeof id === 'string' && id)
+  const replacing = replace === true || !Array.isArray(existingPublic?.locations)
+  const reconciled = replacing
+    ? { locations: approved.map((loc) => sanitizePublicLocation(loc)), removedIds: [], keptHistorical: 0 }
+    : reconcilePublicLocations(approved, existingPublic.locations, stagingIds)
+  const doc = {
+    source: 'shopify_staging_approved',
+    demo: false,
+    updated,
+    filter: PUBLIC_FILTER,
+    count: reconciled.locations.length,
+    locations: reconciled.locations,
+  }
+  return {
+    doc,
+    replacing,
+    removedIds: reconciled.removedIds,
+    keptHistorical: reconciled.keptHistorical,
+    approvedCount: approved.length,
+    diagnostics: gateDiagnostics(rows),
+  }
+}
+
+export function buildPublicFile(locations, { replace = true, existing = null, stagingIds = null, updated = today() } = {}) {
+  const approved = (locations ?? []).filter(Boolean)
+  const canReconcile =
+    replace !== true && existing && Array.isArray(existing.locations) && Array.isArray(stagingIds)
+  if (canReconcile) {
+    const reconciled = reconcilePublicLocations(approved, existing.locations, stagingIds)
     return {
-      ...existing,
+      source: 'shopify_staging_approved',
+      demo: false,
       updated,
-      count: merged.length,
-      locations: merged,
+      filter: PUBLIC_FILTER,
+      count: reconciled.locations.length,
+      locations: reconciled.locations,
     }
   }
-
   return {
     source: 'shopify_staging_approved',
     demo: false,
     updated,
-    filter: 'status=approved AND consent=true AND visit_model!=none (appointment publishes with flag; sw-finder-exclude never published)',
-    count: locations.length,
-    locations,
+    filter: PUBLIC_FILTER,
+    count: approved.length,
+    locations: approved.map((loc) => sanitizePublicLocation(loc)),
   }
+}
+
+export function formatPublishReport(plan, { stagingPath, outPath } = {}) {
+  const counts = plan.diagnostics
+  const lines = [
+    'Publish gate: status=approved AND consent=true AND qualified=true AND public_facing=true AND visit_model in (walk_in, appointment) AND valid coordinates',
+    stagingPath ? `  staging:      ${stagingPath} (${counts.total} rows)` : `  staging rows: ${counts.total}`,
+    `  published:    ${plan.approvedCount} passed the gate`,
+    `  public file:  ${plan.doc.count} location(s)`,
+    `  unpublished:  ${plan.removedIds.length} (staging id no longer passes, or public row fails the display gate)`,
+    `  kept prior:   ${plan.keptHistorical} (historical ids not in this staging queue that still pass the display gate)`,
+    `  mode:         ${plan.replacing ? 'replace (public file = rows that pass the gate)' : 'reconcile (withdrawn staging ids removed)'}`,
+    outPath ? `  wrote:        ${outPath}` : '  wrote:        stdout',
+  ]
+  if (counts.blocked_coordinates > 0) {
+    lines.push(
+      `OPS ALERT: ${counts.blocked_coordinates} staging row(s) blocked on blank, invalid, or 0,0 coordinates. They were not coerced onto the map.`,
+    )
+  }
+  if (plan.doc.count === 0) {
+    lines.push(
+      'OPS ALERT: public feed has 0 locations. Visitors should see an empty-list notice. Do not restore an older snapshot.',
+    )
+  }
+  return lines.join('\n')
 }
 
 export function readJsonIfExists(fs, path) {

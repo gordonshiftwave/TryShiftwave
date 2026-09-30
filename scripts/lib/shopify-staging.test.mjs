@@ -7,14 +7,17 @@ import { fileURLToPath } from 'node:url'
 import {
   applyIncomingStaging,
   csvOrdersToStagingRows,
+  formatPublishReport,
   graphqlOrdersToStagingRows,
   isPublishable,
   mergeStagingRows,
   normalizeTag,
   parseCsv,
   parseTags,
+  planPublicFeed,
   selectApproved,
   toPublicLocation,
+  validCoordinatePair,
 } from './shopify-staging.mjs'
 
 const here = path.dirname(fileURLToPath(import.meta.url))
@@ -101,6 +104,101 @@ describe('visit_model publish gate', () => {
     const merged = mergeStagingRows(incoming, existing)
     assert.equal(merged[0].visit_model, 'appointment')
     assert.equal(merged[0].status, 'approved')
+  })
+})
+
+describe('publish removes rows that no longer pass', () => {
+  const historical = {
+    id: 'historical-sheet-pin',
+    name: 'Historical Sheet Pin',
+    street: '',
+    city: 'Denver',
+    state: 'CO',
+    zip: '80202',
+    lat: 39.7392,
+    lng: -104.9903,
+    phone: '',
+    email: '',
+    hours: 'Hours unavailable',
+    website: '',
+    category: 'Wellness',
+    region: '',
+    qualified: true,
+    public_facing: true,
+    demo_consent: true,
+    walk_in_ok: true,
+    visit_model: 'walk_in',
+    notes: 'sheet gap note',
+  }
+
+  it('drops a previously published id when consent is withdrawn', () => {
+    const withdrawn = { ...base, consent: false, notes: 'buyer asked to be removed — do not publish' }
+    const existing = {
+      locations: [toPublicLocation(base), historical],
+    }
+    const plan = planPublicFeed([withdrawn], existing, { replace: false })
+    const ids = plan.doc.locations.map((loc) => loc.id)
+    assert.equal(ids.includes(base.id), false)
+    assert.equal(ids.includes(historical.id), true)
+    assert.deepEqual(plan.removedIds, [base.id])
+    assert.equal(JSON.stringify(plan.doc).includes('buyer asked'), false)
+    assert.equal(JSON.stringify(plan.doc).includes('sheet gap note'), false)
+  })
+
+  it('drops excluded, rejected, and visit_model none on the next publish', () => {
+    const excluded = { ...base, id: 'excluded-pin', status: 'excluded', exclude: true }
+    const rejected = { ...base, id: 'rejected-pin', status: 'rejected' }
+    const hidden = { ...base, id: 'hidden-pin', visit_model: 'none' }
+    const existing = {
+      locations: [
+        { ...toPublicLocation(base), id: 'excluded-pin' },
+        { ...toPublicLocation(base), id: 'rejected-pin' },
+        { ...toPublicLocation(base), id: 'hidden-pin' },
+        historical,
+      ],
+    }
+    const plan = planPublicFeed([excluded, rejected, hidden], existing)
+    const ids = plan.doc.locations.map((loc) => loc.id)
+    assert.deepEqual(ids, [historical.id])
+  })
+
+  it('replace mode keeps only rows that pass the gate', () => {
+    const plan = planPublicFeed([base], { locations: [historical] }, { replace: true })
+    assert.deepEqual(
+      plan.doc.locations.map((loc) => loc.id),
+      [base.id],
+    )
+    assert.equal(plan.keptHistorical, 0)
+  })
+
+  it('does not copy staging notes into public JSON', () => {
+    const pub = toPublicLocation({ ...base, notes: 'Shopify order note with a private detail' })
+    assert.equal(pub.notes, undefined)
+    assert.equal(JSON.stringify(pub).includes('private detail'), false)
+  })
+
+  it('rejects blank, null, and 0,0 coordinates', () => {
+    assert.equal(validCoordinatePair(null, null), null)
+    assert.equal(validCoordinatePair('', ''), null)
+    assert.equal(validCoordinatePair('  ', '  '), null)
+    assert.equal(validCoordinatePair(0, 0), null)
+    assert.equal(isPublishable({ ...base, lat: null, lng: null }), false)
+    assert.equal(isPublishable({ ...base, lat: '', lng: '' }), false)
+    assert.equal(isPublishable({ ...base, lat: 0, lng: 0 }), false)
+    assert.equal(Number(null), 0)
+    const plan = planPublicFeed([{ ...base, lat: null, lng: null }], { locations: [] })
+    assert.equal(plan.approvedCount, 0)
+    assert.equal(plan.diagnostics.blocked_coordinates, 1)
+    assert.match(formatPublishReport(plan), /OPS ALERT: 1 staging row/)
+  })
+
+  it('requires qualified and public_facing, matching the display gate', () => {
+    assert.equal(isPublishable({ ...base, qualified: false }), false)
+    assert.equal(isPublishable({ ...base, public_facing: false }), false)
+    assert.equal(isPublishable({ ...base, qualified: undefined }), false)
+    const plan = planPublicFeed([{ ...base, qualified: false }], null)
+    assert.equal(plan.doc.locations.length, 0)
+    assert.match(formatPublishReport(plan), /OPS ALERT: public feed has 0 locations/)
   })
 })
 
