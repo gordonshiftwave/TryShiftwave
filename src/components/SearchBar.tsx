@@ -1,4 +1,5 @@
 import { useEffect, useRef, type FormEvent } from 'react'
+import { visitorCopy } from '../copy/visitor'
 import { usePushToTalk } from '../speech/usePushToTalk'
 
 /** Short beat so the spoken words paint in the field before results replace the landing. */
@@ -12,6 +13,8 @@ type SearchBarProps = {
   onUseLocation: () => void
   searching: boolean
   locating: boolean
+  /** Voice search stays off inside the shiftwave.co iframe. */
+  voice?: boolean
   disabled?: boolean
 }
 
@@ -23,6 +26,7 @@ export function SearchBar({
   onUseLocation,
   searching,
   locating,
+  voice = true,
   disabled = false,
 }: SearchBarProps) {
   const isHero = variant === 'hero'
@@ -114,22 +118,24 @@ export function SearchBar({
                 : 'search-shell__input min-h-11 text-base'
             }
           />
-          <button
-            type="button"
-            className={`mic-btn focus-ring ${listening ? 'mic-btn--listening' : ''} ${
-              isHero ? 'mic-btn--hero' : 'mic-btn--compact'
-            }`}
-            aria-label="Push to talk"
-            aria-pressed={listening}
-            title="Push to talk"
-            onClick={toggle}
-            disabled={disabled || searching}
-          >
-            <span className="mic-btn__pulse" aria-hidden="true" />
-            <span className="mic-btn__icon">
-              <MicIcon size={isHero ? 22 : 18} />
-            </span>
-          </button>
+          {voice && (
+            <button
+              type="button"
+              className={`mic-btn focus-ring ${listening ? 'mic-btn--listening' : ''} ${
+                isHero ? 'mic-btn--hero' : 'mic-btn--compact'
+              }`}
+              aria-label="Push to talk"
+              aria-pressed={listening}
+              title="Push to talk"
+              onClick={toggle}
+              disabled={disabled || searching}
+            >
+              <span className="mic-btn__pulse" aria-hidden="true" />
+              <span className="mic-btn__icon">
+                <MicIcon size={isHero ? 22 : 18} />
+              </span>
+            </button>
+          )}
           <button
             type="submit"
             className={
@@ -139,7 +145,7 @@ export function SearchBar({
             }
             disabled={disabled || searching}
           >
-            {searching ? 'Searching…' : 'Search'}
+            {searching ? visitorCopy.searching : 'Search'}
           </button>
         </div>
 
@@ -148,19 +154,19 @@ export function SearchBar({
             type="button"
             className={
               isHero
-                ? 'focus-ring inline-flex items-center gap-2 rounded-full px-3 py-2 text-base font-medium text-ink-faint hover:bg-cream/70 hover:text-energy'
-                : 'focus-ring inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1.5 text-sm font-medium text-ink-faint hover:text-energy'
+                ? 'focus-ring inline-flex items-center gap-2 rounded-full px-3 py-2 text-base font-medium text-ink-soft hover:bg-cream/70 hover:text-energy'
+                : 'focus-ring inline-flex shrink-0 items-center gap-1.5 rounded-full px-2 py-1.5 text-sm font-medium text-ink-soft hover:text-energy'
             }
             onClick={() => void onUseLocation()}
             disabled={disabled || locating}
           >
             <LocateIcon />
-            {locating ? 'Locating…' : 'Use my location'}
+            {locating ? visitorCopy.locating : 'Use my location'}
           </button>
         </div>
       </div>
 
-      {note && (
+      {voice && note && (
         <p
           className={isHero ? 'mt-3 text-center text-sm text-ink-soft' : 'text-sm text-ink-soft'}
           role="status"
