@@ -732,7 +732,12 @@ html.embed .live-banner {
     animation: none;
   }
 
+
   .origin-mark__pulse {
     display: none;
   }
+}
+  /* Hide voice search in embedded finders. */
+html[data-embed='true'] .mic-btn {
+  display: none;
 }
