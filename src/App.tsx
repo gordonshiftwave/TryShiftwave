@@ -127,12 +127,17 @@ export function App() {
 
   useEffect(() => {
     if (!selectedId) return
-    const node = document.getElementById(`place-${selectedId}`)
-    node?.scrollIntoView({
+    const behavior = prefersReducedMotion() ? 'auto' : 'smooth'
+    const phone = window.matchMedia('(max-width: 767px)').matches
+    if (popupId && phone) {
+      document.getElementById('finder-map')?.scrollIntoView({ block: 'nearest', behavior })
+      return
+    }
+    document.getElementById(`place-${selectedId}`)?.scrollIntoView({
       block: 'nearest',
-      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+      behavior,
     })
-  }, [selectedId])
+  }, [selectedId, popupId])
 
   useEffect(() => {
     if (!origin) return
@@ -546,7 +551,7 @@ function ResultsView({
           </ul>
         </section>
 
-        <section className="results-map order-1 min-h-[220px] min-w-0 overflow-hidden h-[36vh] sm:h-[42vh] sm:min-h-[280px] md:sticky md:top-32 md:order-2 md:h-[calc(100dvh-9.5rem)] md:min-h-[28rem] md:aspect-auto">
+        <section id="finder-map" className="results-map order-1 min-h-[220px] min-w-0 overflow-hidden h-[36vh] sm:h-[42vh] sm:min-h-[280px] md:sticky md:top-32 md:order-2 md:h-[calc(100dvh-9.5rem)] md:min-h-[28rem] md:aspect-auto">
           <MapCanvas
             locations={ranked}
             origin={origin}

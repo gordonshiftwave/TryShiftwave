@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { flushSync } from 'react-dom'
 import { createRoot, type Root } from 'react-dom/client'
 import * as maplibregl from 'maplibre-gl'
 import { setWorkerUrl } from 'maplibre-gl'
@@ -11,6 +12,7 @@ import { coordinateKey, groupByCoordinate } from '../geo/groups'
 import { addStateLayers, applyPaperTheme, boundsFromPositions } from '../geo/mapStyle'
 import { PlaceFacts } from './PlaceFacts'
 import { visitorCopy } from '../copy/visitor'
+import { panToKeepBoxInside, popupCardMaxHeight } from '../geo/popupFit'
 
 // Vite includes `base` (GitHub Pages `/TryShiftwave/`, or `VITE_BASE`) in this worker URL.
 const resolvedWorker = workerUrl.startsWith('/') || /^[a-z]+:/i.test(workerUrl)
@@ -199,26 +201,33 @@ export function MapCanvas({
       groupByCoordinate(locations).find((rows) => rows.some((row) => row.id === popupId)) ?? [place]
     const container = document.createElement('div')
     const root: Root = createRoot(container)
-    root.render(
-      <div className="pin-card">
-        {group.length > 1 && <p className="pin-card__count">{visitorCopy.placesHere(group.length)}</p>}
-        {group.map((row) => (
-          <div
-            key={row.id}
-            className={row.id === popupId ? 'pin-card__place is-selected' : 'pin-card__place'}
-          >
-            <PlaceFacts
-              place={row}
-              origin={origin}
-              detailed
-              showName
-              onChoose={(id) => onSelectRef.current(id)}
-            />
-          </div>
-        ))}
-      </div>,
-    )
+    flushSync(() => {
+      root.render(
+        <div className="pin-card">
+          {group.length > 1 && <p className="pin-card__count">{visitorCopy.placesHere(group.length)}</p>}
+          {group.map((row) => (
+            <div
+              key={row.id}
+              className={row.id === popupId ? 'pin-card__place is-selected' : 'pin-card__place'}
+            >
+              <PlaceFacts
+                place={row}
+                origin={origin}
+                detailed
+                showName
+                onChoose={(id) => onSelectRef.current(id)}
+              />
+            </div>
+          ))}
+        </div>,
+      )
+    })
+    const card = container.querySelector<HTMLElement>('.pin-card')
+    if (card) {
+      card.style.maxHeight = `${popupCardMaxHeight(map.getContainer().clientHeight)}px`
+    }
     let closedByUs = false
+    let cancelFit = false
     const popup: Popup = new maplibregl.Popup({
       offset: 18,
       maxWidth: '280px',
@@ -235,7 +244,37 @@ export function MapCanvas({
       if (closedByUs) return
       onPopupCloseRef.current()
     })
+
+    const fitInsideMap = (attempt = 0) => {
+      if (cancelFit || attempt > 2) return
+      const popEl = popup.getElement()
+      if (!popEl) return
+      const mapRect = map.getContainer().getBoundingClientRect()
+      const popRect = popEl.getBoundingClientRect()
+      if (card && popRect.height > mapRect.height - 16) {
+        const overflow = popRect.height - (mapRect.height - 16)
+        card.style.maxHeight = `${Math.max(96, card.clientHeight - overflow)}px`
+        const lngLat = popup.getLngLat()
+        if (lngLat) popup.setLngLat(lngLat)
+      }
+      const next = popup.getElement()?.getBoundingClientRect()
+      if (!next) return
+      const shift = panToKeepBoxInside(next, map.getContainer().getBoundingClientRect())
+      if (shift.x === 0 && shift.y === 0) return
+      map.panBy([shift.x, shift.y], { duration: 0 })
+      fitInsideMap(attempt + 1)
+    }
+    const fitAfterCamera = () => fitInsideMap()
+    // The pin focus animation starts in a later effect. Fit after that camera settles.
+    queueMicrotask(() => {
+      if (cancelFit) return
+      if (map.isMoving()) map.once('moveend', fitAfterCamera)
+      else fitInsideMap()
+    })
+
     return () => {
+      cancelFit = true
+      map.off('moveend', fitAfterCamera)
       closedByUs = true
       popup.remove()
       // Unmount on the next turn so this cleanup does not run inside a React render.

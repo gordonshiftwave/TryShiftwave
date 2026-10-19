@@ -12,6 +12,7 @@ let feed
 let visitor
 let types
 let speech
+let popupFit
 
 const bannedPunctuation = /[\u2014\u2013\u2026\u2018\u2019\u201C\u201D]/
 
@@ -31,6 +32,7 @@ before(async () => {
   visitor = await server.ssrLoadModule('/src/copy/visitor.ts')
   types = await server.ssrLoadModule('/src/types.ts')
   speech = await server.ssrLoadModule('/src/speech/usePushToTalk.ts')
+  popupFit = await server.ssrLoadModule('/src/geo/popupFit.ts')
 })
 
 after(async () => {
@@ -272,5 +274,27 @@ describe('visitor copy stays plain', () => {
     assertPlain(visitor.placesNearLabel(1, 'Phoenix, AZ'))
     assertPlain(visitor.noneWithinLabel(50, 'Austin, TX'))
     assertPlain(visitor.nothingNearbyBody(50, 'Austin, TX'))
+  })
+})
+
+describe('map popup stays inside the map', () => {
+  it('pans a popup that hangs below the map back upward', () => {
+    const frame = { left: 0, top: 0, right: 390, bottom: 280 }
+    const hanging = { left: 40, top: 160, right: 300, bottom: 400 }
+    const shift = popupFit.panToKeepBoxInside(hanging, frame)
+    assert.equal(shift.x, 0)
+    assert.equal(shift.y, 128)
+  })
+
+  it('leaves a popup that already fits', () => {
+    const frame = { left: 0, top: 0, right: 390, bottom: 280 }
+    const inside = { left: 40, top: 24, right: 280, bottom: 200 }
+    const shift = popupFit.panToKeepBoxInside(inside, frame)
+    assert.deepEqual(shift, { x: 0, y: 0 })
+  })
+
+  it('caps the card so a tall popup can scroll inside a short map', () => {
+    assert.equal(popupFit.popupCardMaxHeight(220), 172)
+    assert.equal(popupFit.popupCardMaxHeight(80), 96)
   })
 })

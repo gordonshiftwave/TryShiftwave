@@ -45,7 +45,7 @@ Geocoding uses Zippopotam.us (US ZIP codes) with OpenStreetMap Nominatim / Photo
 - Map and results appear **after** search or **Use my location**
 - **Use my location**, with a clear fallback if permission is denied or the page is not HTTPS
 - Results as a simple list with distance; pins synced to the list; state click-to-zoom at national zoom
-- Each place: name, distance (mi), address (Google Maps link), hours, phone and/or email. Appointment-only partners show **By appointment — call to schedule** (not walk-in language). Walk-in pins stay unlabeled. `none` is never listed.
+- Each place: name, distance (mi), address (Google Maps link), hours, phone and/or email. Appointment-only partners show **By appointment. Call to schedule.** (not walk-in language). Walk-in pins stay unlabeled. `none` is never listed.
 - Empty / no-nearby state shows the closest qualified try-spots
 - Mobile-first layout; `prefers-reduced-motion` disables fly/fit animation and the results reveal
 
