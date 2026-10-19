@@ -18,6 +18,15 @@ export function formatMiles(miles: number): string {
   return `${Math.round(miles)} mi`
 }
 
+export function rankByDistance<T extends Coord>(
+  origin: Coord,
+  places: T[],
+): (T & { distanceMiles: number })[] {
+  return places
+    .map((place) => ({ ...place, distanceMiles: milesBetween(origin, place) }))
+    .sort((a, b) => a.distanceMiles - b.distanceMiles)
+}
+
 export function prefersReducedMotion(): boolean {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }

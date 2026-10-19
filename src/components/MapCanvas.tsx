@@ -1,12 +1,18 @@
 import { useEffect, useRef } from 'react'
+import { flushSync } from 'react-dom'
+import { createRoot, type Root } from 'react-dom/client'
 import * as maplibregl from 'maplibre-gl'
 import { setWorkerUrl } from 'maplibre-gl'
-import type { Map as MapLibreMap, Marker } from 'maplibre-gl'
+import type { Map as MapLibreMap, Marker, Popup } from 'maplibre-gl'
 import type { Feature, Polygon, MultiPolygon } from 'geojson'
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import { CONUS_BOUNDS, pinKind, type Coord, type RankedLocation } from '../types'
 import { prefersReducedMotion } from '../geo/distance'
+import { coordinateKey, groupByCoordinate } from '../geo/groups'
 import { addStateLayers, applyPaperTheme, boundsFromPositions } from '../geo/mapStyle'
+import { PlaceFacts } from './PlaceFacts'
+import { visitorCopy } from '../copy/visitor'
+import { panToKeepBoxInside, popupCardMaxHeight } from '../geo/popupFit'
 
 // Vite includes `base` (GitHub Pages `/TryShiftwave/`, or `VITE_BASE`) in this worker URL.
 const resolvedWorker = workerUrl.startsWith('/') || /^[a-z]+:/i.test(workerUrl)
@@ -26,8 +32,10 @@ type MapCanvasProps = {
   selectedId: string | null
   hoveredId: string | null
   focus: MapFocus
+  popupId: string | null
   onSelect: (id: string) => void
   onHover: (id: string | null) => void
+  onPopupClose: () => void
 }
 
 export function MapCanvas({
@@ -36,18 +44,24 @@ export function MapCanvas({
   selectedId,
   hoveredId,
   focus,
+  popupId,
   onSelect,
   onHover,
+  onPopupClose,
 }: MapCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapLibreMap | null>(null)
   const markersRef = useRef<Map<string, Marker>>(new Map())
   const originMarkerRef = useRef<Marker | null>(null)
   const hoverStateRef = useRef<number | string | null>(null)
+  const selectedIdRef = useRef(selectedId)
   const onSelectRef = useRef(onSelect)
   const onHoverRef = useRef(onHover)
+  const onPopupCloseRef = useRef(onPopupClose)
+  selectedIdRef.current = selectedId
   onSelectRef.current = onSelect
   onHoverRef.current = onHover
+  onPopupCloseRef.current = onPopupClose
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return
@@ -119,7 +133,8 @@ export function MapCanvas({
     const map = mapRef.current
     if (!map) return
 
-    const keep = new Set(locations.map((place) => place.id))
+    const groups = groupByCoordinate(locations)
+    const keep = new Set(groups.map((group) => coordinateKey(group[0].lat, group[0].lng)))
     markersRef.current.forEach((marker, id) => {
       if (!keep.has(id)) {
         marker.remove()
@@ -127,24 +142,37 @@ export function MapCanvas({
       }
     })
 
-    for (const place of locations) {
-      let marker = markersRef.current.get(place.id)
+    for (const group of groups) {
+      const key = coordinateKey(group[0].lat, group[0].lng)
+      let marker = markersRef.current.get(key)
       if (!marker) {
-        const el = pinElement(place)
+        const el = pinElement(group)
         el.addEventListener('click', (event) => {
           event.stopPropagation()
-          onSelectRef.current(place.id)
+          const ids = (el.dataset.ids ?? '').split(',').filter(Boolean)
+          const current = selectedIdRef.current
+          const pick = current && ids.includes(current) ? current : ids[0]
+          if (pick) onSelectRef.current(pick)
         })
-        el.addEventListener('mouseenter', () => onHoverRef.current(place.id))
+        el.addEventListener('mouseenter', () => {
+          const ids = (el.dataset.ids ?? '').split(',').filter(Boolean)
+          onHoverRef.current(ids[0] ?? null)
+        })
         el.addEventListener('mouseleave', () => onHoverRef.current(null))
         marker = new maplibregl.Marker({ element: el, anchor: 'bottom' }).setLngLat([
-          place.lng,
-          place.lat,
+          group[0].lng,
+          group[0].lat,
         ])
         marker.addTo(map)
-        markersRef.current.set(place.id, marker)
+        markersRef.current.set(key, marker)
       }
-      syncPinState(marker.getElement(), place.id === selectedId, place.id === hoveredId)
+      const el = marker.getElement()
+      syncPinContent(el, group)
+      syncPinState(
+        el,
+        group.some((place) => place.id === selectedId),
+        group.some((place) => place.id === hoveredId),
+      )
     }
   }, [locations, selectedId, hoveredId])
 
@@ -163,6 +191,96 @@ export function MapCanvas({
       .setLngLat([origin.lng, origin.lat])
       .addTo(map)
   }, [origin])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !popupId) return
+    const place = locations.find((row) => row.id === popupId)
+    if (!place) return
+    const group =
+      groupByCoordinate(locations).find((rows) => rows.some((row) => row.id === popupId)) ?? [place]
+    const container = document.createElement('div')
+    const root: Root = createRoot(container)
+    flushSync(() => {
+      root.render(
+        <div className="pin-card">
+          {group.length > 1 && <p className="pin-card__count">{visitorCopy.placesHere(group.length)}</p>}
+          {group.map((row) => (
+            <div
+              key={row.id}
+              className={row.id === popupId ? 'pin-card__place is-selected' : 'pin-card__place'}
+            >
+              <PlaceFacts
+                place={row}
+                origin={origin}
+                detailed
+                showName
+                onChoose={(id) => onSelectRef.current(id)}
+              />
+            </div>
+          ))}
+        </div>,
+      )
+    })
+    const card = container.querySelector<HTMLElement>('.pin-card')
+    if (card) {
+      card.style.maxHeight = `${popupCardMaxHeight(map.getContainer().clientHeight)}px`
+    }
+    let closedByUs = false
+    let cancelFit = false
+    const popup: Popup = new maplibregl.Popup({
+      offset: 18,
+      maxWidth: '280px',
+      closeButton: true,
+      closeOnClick: false,
+      closeOnMove: false,
+      className: 'sw-popup',
+      focusAfterOpen: false,
+    })
+      .setLngLat([place.lng, place.lat])
+      .setDOMContent(container)
+      .addTo(map)
+    popup.on('close', () => {
+      if (closedByUs) return
+      onPopupCloseRef.current()
+    })
+
+    const fitInsideMap = (attempt = 0) => {
+      if (cancelFit || attempt > 2) return
+      const popEl = popup.getElement()
+      if (!popEl) return
+      const mapRect = map.getContainer().getBoundingClientRect()
+      const popRect = popEl.getBoundingClientRect()
+      if (card && popRect.height > mapRect.height - 16) {
+        const overflow = popRect.height - (mapRect.height - 16)
+        card.style.maxHeight = `${Math.max(96, card.clientHeight - overflow)}px`
+        const lngLat = popup.getLngLat()
+        if (lngLat) popup.setLngLat(lngLat)
+      }
+      const next = popup.getElement()?.getBoundingClientRect()
+      if (!next) return
+      const shift = panToKeepBoxInside(next, map.getContainer().getBoundingClientRect())
+      if (shift.x === 0 && shift.y === 0) return
+      map.panBy([shift.x, shift.y], { duration: 0 })
+      fitInsideMap(attempt + 1)
+    }
+    const fitAfterCamera = () => fitInsideMap()
+    // The pin focus animation starts in a later effect. Fit after that camera settles.
+    queueMicrotask(() => {
+      if (cancelFit) return
+      if (map.isMoving()) map.once('moveend', fitAfterCamera)
+      else fitInsideMap()
+    })
+
+    return () => {
+      cancelFit = true
+      map.off('moveend', fitAfterCamera)
+      closedByUs = true
+      popup.remove()
+      // Unmount on the next turn so this cleanup does not run inside a React render.
+      window.setTimeout(() => root.unmount(), 0)
+    }
+  }, [popupId, locations, origin])
 
   useEffect(() => {
     const map = mapRef.current
@@ -187,25 +305,42 @@ export function MapCanvas({
   }, [focus])
 
   return (
-    <div className="map-shell paper-card relative h-full w-full min-h-[240px] max-w-full overflow-hidden p-1.5 md:min-h-[480px]">
+    <div className="map-shell paper-card relative h-full w-full min-h-[240px] max-w-full p-1.5 md:min-h-[480px]">
       <div
         ref={containerRef}
-        className="h-full w-full min-h-[228px] max-w-full overflow-hidden rounded-[16px] md:min-h-[468px]"
+        className="h-full w-full min-h-[228px] max-w-full rounded-[16px] md:min-h-[468px]"
       />
     </div>
   )
 }
 
-function pinElement(place: RankedLocation): HTMLButtonElement {
+function pinElement(group: RankedLocation[]): HTMLButtonElement {
   const button = document.createElement('button')
   button.type = 'button'
-  button.className = `sw-pin sw-pin--${pinKind(place.category)}`
-  button.setAttribute('aria-label', place.name)
+  button.className = `sw-pin sw-pin--${pinKind(group[0].category)}`
   button.innerHTML = `<svg class="sw-pin__glyph" viewBox="0 0 28 28" aria-hidden="true">
     <path class="sw-pin__shape" d="M14 2.5c-5.2 0-9.4 4.1-9.4 9.2 0 6.6 9.4 14 9.4 14s9.4-7.4 9.4-14c0-5.1-4.2-9.2-9.4-9.2z"/>
     <circle class="sw-pin__dot" cx="14" cy="11.2" r="3.15"/>
   </svg>`
+  syncPinContent(button, group)
   return button
+}
+
+function syncPinContent(button: HTMLElement, group: RankedLocation[]): void {
+  const names = group.map((place) => place.name).join(', ')
+  button.setAttribute('aria-label', group.length > 1 ? `${group.length} places: ${names}` : group[0].name)
+  button.dataset.ids = group.map((place) => place.id).join(',')
+  let badge = button.querySelector('.sw-pin__count')
+  if (group.length > 1) {
+    if (!badge) {
+      badge = document.createElement('span')
+      badge.className = 'sw-pin__count'
+      button.appendChild(badge)
+    }
+    badge.textContent = String(group.length)
+  } else {
+    badge?.remove()
+  }
 }
 
 function syncPinState(el: HTMLElement, active: boolean, hover: boolean): void {

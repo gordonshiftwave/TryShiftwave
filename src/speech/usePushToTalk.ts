@@ -40,24 +40,33 @@ export function speechRecognitionSupported(): boolean {
   return getSpeechRecognitionCtor() !== null && window.isSecureContext
 }
 
-const UNSUPPORTED_MESSAGE =
-  'Voice search isn’t available in this browser. Type a ZIP or city instead.'
+export const speechVisitorNotes = {
+  unsupported: "Voice search isn't available in this browser. Type a ZIP or city instead.",
+  denied: 'Microphone permission is off. Type a ZIP or city instead.',
+  noMic: 'No microphone found. Type a ZIP or city instead.',
+  network: 'Voice search needs a connection. Type a ZIP or city instead.',
+  noSpeech: "Didn't catch that. Tap the mic and try again.",
+  failed: "Voice search didn't work. Type a ZIP or city instead.",
+  listening: 'Listening. Your words appear in the search box. Tap the mic to stop.',
+} as const
+
+const UNSUPPORTED_MESSAGE = speechVisitorNotes.unsupported
 
 function messageForError(code?: string): string {
   switch (code) {
     case 'not-allowed':
     case 'service-not-allowed':
-      return 'Microphone permission is off — type a ZIP or city instead.'
+      return speechVisitorNotes.denied
     case 'audio-capture':
-      return 'No microphone found. Type a ZIP or city instead.'
+      return speechVisitorNotes.noMic
     case 'network':
-      return 'Voice search needs a connection. Type a ZIP or city instead.'
+      return speechVisitorNotes.network
     case 'no-speech':
-      return 'Didn’t catch that. Tap the mic and try again.'
+      return speechVisitorNotes.noSpeech
     case 'aborted':
       return ''
     default:
-      return 'Voice search didn’t work. Type a ZIP or city instead.'
+      return speechVisitorNotes.failed
   }
 }
 
@@ -126,7 +135,7 @@ export function usePushToTalk({ onTranscript, onFinal, disabled = false }: UsePu
     finalRef.current = ''
     liveRef.current = ''
     userStoppedRef.current = false
-    setNote('Listening… your words appear in the search box. Tap the mic to stop.')
+    setNote(speechVisitorNotes.listening)
 
     const rec = new Ctor()
     rec.lang = 'en-US'
@@ -186,7 +195,7 @@ export function usePushToTalk({ onTranscript, onFinal, disabled = false }: UsePu
       if (!userStopped) {
         setNote((current) =>
           current && current.startsWith('Listening')
-            ? 'Didn’t catch that. Tap the mic and try again.'
+            ? speechVisitorNotes.noSpeech
             : current,
         )
       } else {

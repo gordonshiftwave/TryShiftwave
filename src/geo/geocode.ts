@@ -2,13 +2,38 @@ import type { GeocodeKind, GeocodeResult } from '../types'
 
 const ZIP_RE = /^\d{5}(?:-\d{4})?$/
 
+/**
+ * Nominatim asks for at most one request per second and no autocomplete.
+ * Search runs only when someone submits the field, and these calls wait
+ * their turn. Zippopotam handles a bare ZIP so most searches never reach it.
+ */
+export const NOMINATIM_GAP_MS = 1100
+
+type PaceState = { last: number }
+
+const nominatimPace: PaceState = { last: 0 }
+
+export async function pace(
+  minGapMs: number,
+  state: PaceState,
+  now: () => number = Date.now,
+  sleep: (ms: number) => Promise<void> = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+): Promise<void> {
+  const wait = minGapMs - (now() - state.last)
+  if (wait > 0) await sleep(wait)
+  state.last = now()
+}
+
+export function isZipQuery(input: string): boolean {
+  return ZIP_RE.test(input.trim())
+}
+
 export async function geocodeQuery(input: string): Promise<GeocodeResult | null> {
   const q = input.trim()
   if (!q) return null
 
-  if (ZIP_RE.test(q.split(/\s+/)[0] ?? '')) {
-    const zip = (q.match(/^\d{5}/) ?? [q])[0]
-    const fromZip = await geocodeZip(zip)
+  if (isZipQuery(q)) {
+    const fromZip = await geocodeZip(q.slice(0, 5))
     if (fromZip) return fromZip
   }
 
@@ -17,13 +42,17 @@ export async function geocodeQuery(input: string): Promise<GeocodeResult | null>
 
 export async function reverseGeocode(lat: number, lng: number): Promise<string> {
   try {
+    await pace(NOMINATIM_GAP_MS, nominatimPace)
     const url = new URL('https://nominatim.openstreetmap.org/reverse')
     url.searchParams.set('format', 'jsonv2')
     url.searchParams.set('lat', String(lat))
     url.searchParams.set('lon', String(lng))
     url.searchParams.set('zoom', '10')
     url.searchParams.set('addressdetails', '1')
-    const res = await fetch(url, { headers: nominatimHeaders() })
+    const res = await fetch(url, {
+      headers: nominatimHeaders(),
+      signal: AbortSignal.timeout(8000),
+    })
     if (!res.ok) return 'Your location'
     const data = (await res.json()) as {
       address?: { city?: string; town?: string; village?: string; state?: string }
@@ -42,44 +71,48 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string> 
 
 async function geocodeZip(zip: string): Promise<GeocodeResult | null> {
   try {
-    const res = await fetch(`https://api.zippopotam.us/us/${zip}`)
-    if (res.ok) {
-      const data = (await res.json()) as {
-        'post code'?: string
-        places?: Array<{
-          'place name': string
-          state: string
-          latitude: string
-          longitude: string
-          'state abbreviation': string
-        }>
-      }
-      const place = data.places?.[0]
-      if (place) {
-        return {
-          lat: Number(place.latitude),
-          lng: Number(place.longitude),
-          label: `${place['place name']}, ${place['state abbreviation']} ${zip}`,
-          kind: 'zip',
-          state: place['state abbreviation'],
-        }
-      }
+    const res = await fetch(`https://api.zippopotam.us/us/${zip}`, {
+      signal: AbortSignal.timeout(8000),
+    })
+    if (!res.ok) return null
+    const data = (await res.json()) as {
+      places?: Array<{
+        'place name': string
+        state: string
+        latitude: string
+        longitude: string
+        'state abbreviation': string
+      }>
+    }
+    const place = data.places?.[0]
+    const lat = Number(place?.latitude)
+    const lng = Number(place?.longitude)
+    if (!place || !Number.isFinite(lat) || !Number.isFinite(lng)) return null
+    return {
+      lat,
+      lng,
+      label: `${place['place name']}, ${place['state abbreviation']} ${zip}`,
+      kind: 'zip',
+      state: place['state abbreviation'],
     }
   } catch {
-    /* fall through */
+    return null
   }
-  return geocodeNominatim(zip)
 }
 
 async function geocodeNominatim(q: string): Promise<GeocodeResult | null> {
   try {
+    await pace(NOMINATIM_GAP_MS, nominatimPace)
     const url = new URL('https://nominatim.openstreetmap.org/search')
     url.searchParams.set('format', 'jsonv2')
     url.searchParams.set('q', q)
     url.searchParams.set('countrycodes', 'us')
     url.searchParams.set('limit', '1')
     url.searchParams.set('addressdetails', '1')
-    const res = await fetch(url, { headers: nominatimHeaders() })
+    const res = await fetch(url, {
+      headers: nominatimHeaders(),
+      signal: AbortSignal.timeout(8000),
+    })
     if (!res.ok) return null
     const rows = (await res.json()) as NominatimHit[]
     const hit = rows[0]
@@ -94,9 +127,9 @@ async function geocodePhoton(q: string): Promise<GeocodeResult | null> {
   try {
     const url = new URL('https://photon.komoot.io/api/')
     url.searchParams.set('q', q)
-    url.searchParams.set('limit', '1')
+    url.searchParams.set('limit', '5')
     url.searchParams.set('lang', 'en')
-    const res = await fetch(url)
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) })
     if (!res.ok) return null
     const data = (await res.json()) as {
       features?: Array<{
@@ -112,7 +145,12 @@ async function geocodePhoton(q: string): Promise<GeocodeResult | null> {
         }
       }>
     }
-    const feature = data.features?.[0]
+    const feature = data.features?.find((row) => {
+      const code = row.properties?.countrycode
+      const coords = row.geometry?.coordinates
+      const inUs = !code || code.toUpperCase() === 'US'
+      return inUs && !!coords && coords.length >= 2
+    })
     const coords = feature?.geometry?.coordinates
     const props = feature?.properties
     if (!coords || coords.length < 2 || !props) return null

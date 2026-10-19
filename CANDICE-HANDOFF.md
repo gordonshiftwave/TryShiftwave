@@ -119,9 +119,11 @@ Optional resize listener. Skip it if the fixed height is enough. Clamp. Check or
 </script>
 ```
 
-**Geolocation.** “Use my location” needs `allow="geolocation"` and HTTPS. If the theme sets a Permissions-Policy, it must allow geolocation for `https://gordonshiftwave.github.io`. The app already explains what to do when permission is denied (`src/App.tsx`).
+**Geolocation.** “Use my location” needs `allow="geolocation"` and HTTPS. If the theme sets a Permissions-Policy, it must allow geolocation for `https://gordonshiftwave.github.io`. The app already explains what to do when permission is denied (`src/App.tsx`). Typed street, city, or ZIP search does not need geolocation.
 
-**Microphone.** Voice search is optional and off for launch. Leave `microphone` out of `allow`. The mic control fails closed to typed search (`src/speech/usePushToTalk.ts`). Add `microphone` later only if Candice wants voice on.
+**Address, directions, and distance.** A visitor can click a result or a map pin to see the address, plus phone and hours when those are listed, and a Directions link. The link opens in a new tab (Google Maps, or Apple Maps on an iPhone) so the iframe stays on the Try page. Pins that share a city point open one popup listing each place. A typed street, city, or ZIP sorts places nearest first and shows miles. No API key. Some listings are still city and ZIP until a street is published. Do not invent one.
+
+**Microphone.** Voice search stays off in embed mode. The mic button is not rendered when `?embed=1` (or when the app is inside an iframe). Leave `microphone` out of `allow`. Add `microphone` later only if Candice wants voice on the standalone page.
 
 **Loading / failure / empty.** The iframe shows its own notice and tells the visitor to use the request form below the finder. It does not know the form’s id. Do not hide the forms when the list is empty.
 
@@ -196,8 +198,10 @@ CI: pull requests run `.github/workflows/ci.yml` (`npm test`, `npm run build`). 
 
 Still for Candice on the live theme, after she pastes the iframe:
 
-- Search by ZIP, city, and “Use my location”.
-- Appointment pin shows “By appointment — call to schedule”.
+- Search by ZIP, city, and street address. Results sort nearest first and show miles. “Use my location” still works when the browser allows it.
+- Click a result and a map pin. The address and a Directions link show. Phone and hours show when the listing has them.
+- Appointment pin shows “By appointment. Call to schedule.”
+- The microphone button is absent in `?embed=1`.
 - Empty area shows the closest pins, and the forms below the iframe still submit.
 - Mobile width: the page scrolls to the forms; the iframe does not cover them.
 

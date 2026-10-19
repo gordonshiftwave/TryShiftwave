@@ -31,7 +31,7 @@ export type LocationRecord = {
 
 /** Public list copy. Walk-in stays quiet; appointment must not read as walk-in. */
 export function visitModelLabel(model: VisitModel): string | null {
-  if (model === 'appointment') return 'By appointment — call to schedule'
+  if (model === 'appointment') return 'By appointment. Call to schedule.'
   return null
 }
 

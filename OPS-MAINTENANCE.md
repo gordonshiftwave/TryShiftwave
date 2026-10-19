@@ -45,7 +45,7 @@ Historical pins that were never staged are not in `ops/staging.json`. To edit on
 ## Change visit model
 
 1. In the staging row set `visit_model` to `"walk_in"`, `"appointment"`, or `"none"`.
-2. `walk_in` lists with no extra label. `appointment` lists with “By appointment — call to schedule”. `none` removes the pin on the next publish.
+2. `walk_in` lists with no extra label. `appointment` lists with “By appointment. Call to schedule.” `none` removes the pin on the next publish.
 3. Set `walk_in_ok` to `true` only for `walk_in`. The publisher derives the public flag from `visit_model`.
 4. Publish and verify the label.
 

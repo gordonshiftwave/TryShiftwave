@@ -1,13 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { EmptyState } from './components/EmptyState'
 import { LocationCard } from './components/LocationCard'
 import { MapCanvas, type MapFocus } from './components/MapCanvas'
 import { SearchBar } from './components/SearchBar'
 import { WaveMark } from './components/WaveMark'
+import {
+  noneWithinLabel,
+  nothingNearbyBody,
+  placesNearLabel,
+  visitorCopy,
+} from './copy/visitor'
 import { feedVisitorMessage } from './data/feedCopy'
 import { loadLocations, type FeedStatus } from './data/load'
 import { formatAddress } from './data/parse'
-import { milesBetween, prefersReducedMotion } from './geo/distance'
+import { milesBetween, prefersReducedMotion, rankByDistance } from './geo/distance'
 import { geocodeQuery, reverseGeocode } from './geo/geocode'
 import { statesMatch } from './geo/states'
 import { readEmbedMode } from './embed'
@@ -32,9 +38,11 @@ export function App() {
   const [origin, setOrigin] = useState<GeocodeResult | null>(null)
   const [radius, setRadius] = useState(DEFAULT_RADIUS_MILES)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [popupId, setPopupId] = useState<string | null>(null)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [focus, setFocus] = useState<MapFocus>({ type: 'us' })
   const [geoNote, setGeoNote] = useState<string | null>(null)
+  const searchSeq = useRef(0)
 
   useEffect(() => {
     let cancelled = false
@@ -68,12 +76,7 @@ export function App() {
     if (!origin) {
       return places.map((place) => ({ ...place, distanceMiles: null }))
     }
-    return places
-      .map((place) => ({
-        ...place,
-        distanceMiles: milesBetween(origin, place),
-      }))
-      .sort((a, b) => (a.distanceMiles ?? 0) - (b.distanceMiles ?? 0))
+    return rankByDistance(origin, places)
   }, [places, origin])
 
   const nearby = useMemo(() => {
@@ -89,7 +92,12 @@ export function App() {
 
   const closestFallback = ranked.slice(0, 3)
   const emptyNearby = Boolean(origin) && nearby.length === 0 && placesReady && places.length > 0
-  const list = emptyNearby ? closestFallback : nearby
+  const list = useMemo(() => {
+    const base = emptyNearby ? closestFallback : nearby
+    if (!selectedId || base.some((place) => place.id === selectedId)) return base
+    const selected = ranked.find((place) => place.id === selectedId)
+    return selected ? [selected, ...base] : base
+  }, [closestFallback, emptyNearby, nearby, ranked, selectedId])
   const showingResults = origin !== null
 
   useEffect(() => {
@@ -110,6 +118,7 @@ export function App() {
       type: 'fit',
       coords: [origin, ...pool.map((row) => row.place)],
     })
+    setPopupId(null)
     setSelectedId((current) => {
       if (current && pool.some((row) => row.place.id === current)) return current
       return matches[0]?.place.id ?? pool[0]?.place.id ?? null
@@ -118,12 +127,17 @@ export function App() {
 
   useEffect(() => {
     if (!selectedId) return
-    const node = document.getElementById(`place-${selectedId}`)
-    node?.scrollIntoView({
+    const behavior = prefersReducedMotion() ? 'auto' : 'smooth'
+    const phone = window.matchMedia('(max-width: 767px)').matches
+    if (popupId && phone) {
+      document.getElementById('finder-map')?.scrollIntoView({ block: 'nearest', behavior })
+      return
+    }
+    document.getElementById(`place-${selectedId}`)?.scrollIntoView({
       block: 'nearest',
-      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+      behavior,
     })
-  }, [selectedId])
+  }, [selectedId, popupId])
 
   useEffect(() => {
     if (!origin) return
@@ -136,19 +150,22 @@ export function App() {
   async function runSearch(text: string) {
     const q = text.trim()
     if (!q) return
+    const seq = ++searchSeq.current
     setStatus('searching')
     setError(null)
     setGeoNote(null)
     const result = await geocodeQuery(q)
+    if (seq !== searchSeq.current) return
     setStatus('ready')
     if (!result) {
-      setError('We couldn’t find that place. Try a US ZIP, city, or street address.')
+      setError(visitorCopy.searchMiss)
       return
     }
     applyOrigin(result)
   }
 
   function applyOrigin(result: GeocodeResult) {
+    setPopupId(null)
     setOrigin(result)
     setQuery(result.label)
   }
@@ -157,11 +174,11 @@ export function App() {
     setGeoNote(null)
     setError(null)
     if (!('geolocation' in navigator)) {
-      setGeoNote('This browser can’t share a location. Search a ZIP or city instead.')
+      setGeoNote(visitorCopy.geoUnsupported)
       return
     }
     if (!window.isSecureContext) {
-      setGeoNote('Location needs a secure (https) connection. Search a ZIP instead.')
+      setGeoNote(visitorCopy.geoInsecure)
       return
     }
     setStatus('locating')
@@ -175,11 +192,11 @@ export function App() {
       (err) => {
         setStatus('ready')
         if (err.code === err.PERMISSION_DENIED) {
-          setGeoNote('Location permission is off — search a ZIP or city instead.')
+          setGeoNote(visitorCopy.geoDenied)
         } else if (err.code === err.TIMEOUT) {
-          setGeoNote('Location timed out. Try again, or search a ZIP.')
+          setGeoNote(visitorCopy.geoTimeout)
         } else {
-          setGeoNote('We couldn’t read your location. Try a city or ZIP.')
+          setGeoNote(visitorCopy.geoFailed)
         }
       },
       { enableHighAccuracy: false, timeout: 8000, maximumAge: 120000 },
@@ -190,22 +207,26 @@ export function App() {
     const place = places.find((row) => row.id === id)
     if (!place) return
     setSelectedId(id)
+    setPopupId(id)
     setFocus({ type: 'pin', coord: place })
   }
 
   function resetView() {
+    searchSeq.current += 1
     setOrigin(null)
     setSelectedId(null)
+    setPopupId(null)
     setError(null)
     setGeoNote(null)
     setQuery('')
     setFocus({ type: 'us' })
+    setStatus((current) => (current === 'searching' || current === 'locating' ? 'ready' : current))
   }
 
   const resultLabel = origin
     ? emptyNearby
-      ? `No try-spots within ${radius} miles of ${origin.label}`
-      : `${nearby.length} try-spot${nearby.length === 1 ? '' : 's'} near ${origin.label}`
+      ? noneWithinLabel(radius, origin.label)
+      : placesNearLabel(nearby.length, origin.label)
     : ''
 
   return (
@@ -233,7 +254,7 @@ export function App() {
           locating={status === 'locating'}
           error={error}
           geoNote={geoNote}
-          resultLabel={!placesReady ? 'Loading try-spots…' : resultLabel}
+          resultLabel={!placesReady ? visitorCopy.loadingPlaces : resultLabel}
           radius={radius}
           onRadius={setRadius}
           feedStatus={feedStatus}
@@ -246,9 +267,10 @@ export function App() {
           selectedId={selectedId}
           hoveredId={hoveredId}
           focus={focus}
+          popupId={popupId}
           onSelect={selectFromList}
           onHover={setHoveredId}
-          onSelectPin={setSelectedId}
+          onPopupClose={() => setPopupId(null)}
         />
       ) : (
         <LandingView
@@ -273,11 +295,7 @@ function LiveListBanner() {
     <div className="live-banner">
       <p className="mx-auto flex max-w-[1100px] items-start gap-2.5 px-5 py-2 text-[0.8rem] leading-snug text-ink-soft sm:gap-3 sm:py-2.5 sm:text-sm md:px-8">
         <span className="mt-1 inline-block h-2 w-2 shrink-0 rounded-full bg-energy" />
-        <span>
-          <strong className="font-semibold text-ink">Live partner list.</strong> Qualified public
-          try-spots from the partner sheet. Hours are listed when published. Some pins are
-          city-level until a street address is added.
-        </span>
+        <span>{visitorCopy.banner}</span>
       </p>
     </div>
   )
@@ -338,6 +356,7 @@ function LandingView({
             onUseLocation={onUseLocation}
             searching={searching}
             locating={locating}
+            voice={!embed}
           />
         </div>
 
@@ -348,8 +367,9 @@ function LandingView({
         )}
       </main>
 
-      <footer className="standalone-footer px-5 py-6 text-center text-sm text-ink-faint">
-        Pins are qualified public try-spots only — not every purchaser.
+      <footer className="standalone-footer px-5 py-6 text-center text-sm text-ink-soft">
+        <p>{visitorCopy.footer}</p>
+        <OsmCredit className="mt-2" />
       </footer>
     </div>
   )
@@ -380,8 +400,9 @@ type ResultsViewProps = {
   hoveredId: string | null
   focus: MapFocus
   onSelect: (id: string) => void
+  popupId: string | null
   onHover: (id: string | null) => void
-  onSelectPin: (id: string) => void
+  onPopupClose: () => void
 }
 
 function ResultsView({
@@ -409,8 +430,9 @@ function ResultsView({
   hoveredId,
   focus,
   onSelect,
+  popupId,
   onHover,
-  onSelectPin,
+  onPopupClose,
 }: ResultsViewProps) {
   return (
     <>
@@ -446,6 +468,7 @@ function ResultsView({
             onUseLocation={onUseLocation}
             searching={searching}
             locating={locating}
+            voice={!embed}
           />
         </div>
       </header>
@@ -457,7 +480,7 @@ function ResultsView({
               {resultLabel}
             </h2>
             <div className="mt-3 flex flex-wrap items-center gap-1.5">
-              <span className="mr-1 text-sm text-ink-faint">Within</span>
+              <span className="mr-1 text-sm text-ink-soft">Within</span>
               {NEARBY_RADIUS_OPTIONS.map((miles) => (
                 <button
                   key={miles}
@@ -480,21 +503,18 @@ function ResultsView({
 
           {feedStatus === 'unavailable' && (
             <EmptyState
-              title="Try-spot list didn’t load"
+              title={visitorCopy.listFailedTitle}
               body={feedVisitorMessage('unavailable') ?? ''}
             />
           )}
 
           {feedStatus === 'empty' && (
-            <EmptyState
-              title="No public try-spots listed"
-              body={feedVisitorMessage('empty') ?? ''}
-            />
+            <EmptyState title={visitorCopy.noPlacesTitle} body={feedVisitorMessage('empty') ?? ''} />
           )}
 
           {feedStatus === 'invalid' && (
             <EmptyState
-              title="Try-spot list couldn’t be read"
+              title={visitorCopy.listUnreadableTitle}
               body={feedVisitorMessage('invalid') ?? ''}
             />
           )}
@@ -502,21 +522,18 @@ function ResultsView({
           {emptyNearby && (
             <div className="mb-4">
               <EmptyState
-                title="Nothing public nearby — yet"
-                body={`We don’t have a qualified try-spot within ${radius} miles of ${originLabel}. These are the closest qualified locations on the live partner list.`}
+                title={visitorCopy.nothingNearbyTitle}
+                body={nothingNearbyBody(radius, originLabel ?? 'there')}
               />
             </div>
           )}
 
           {noQualified && (
-            <EmptyState
-              title="No qualified locations"
-              body="Every public pin must be a qualified, public-facing try-spot with demo consent. Appointment-only partners are listed; excluded spots are not."
-            />
+            <EmptyState title={visitorCopy.noPlacesTitle} body={visitorCopy.noPlacesBody} />
           )}
 
           {emptyNearby && (
-            <p className="mb-2 text-sm font-medium text-ink-faint">Closest try-spots</p>
+            <p className="mb-2 text-sm font-medium text-ink-soft">{visitorCopy.closestHeading}</p>
           )}
 
           <ul className="place-list place-panel">
@@ -524,6 +541,7 @@ function ResultsView({
               <li key={place.id}>
                 <LocationCard
                   place={place}
+                  origin={origin}
                   active={place.id === selectedId}
                   onSelect={() => onSelect(place.id)}
                   onHover={onHover}
@@ -533,31 +551,44 @@ function ResultsView({
           </ul>
         </section>
 
-        <section className="results-map order-1 min-h-[220px] min-w-0 overflow-hidden h-[36vh] sm:h-[42vh] sm:min-h-[280px] md:sticky md:top-32 md:order-2 md:h-[calc(100dvh-9.5rem)] md:min-h-[28rem] md:aspect-auto">
+        <section id="finder-map" className="results-map order-1 min-h-[220px] min-w-0 overflow-hidden h-[36vh] sm:h-[42vh] sm:min-h-[280px] md:sticky md:top-32 md:order-2 md:h-[calc(100dvh-9.5rem)] md:min-h-[28rem] md:aspect-auto">
           <MapCanvas
             locations={ranked}
             origin={origin}
             selectedId={selectedId}
             hoveredId={hoveredId}
             focus={focus}
-            onSelect={onSelectPin}
+            popupId={popupId}
+            onSelect={onSelect}
             onHover={onHover}
+            onPopupClose={onPopupClose}
           />
         </section>
       </main>
 
       <footer className="results-footer border-t border-line">
-        <div className="mx-auto flex max-w-[1100px] flex-col gap-2 px-5 py-8 text-sm text-ink-faint md:flex-row md:items-center md:justify-between md:px-8">
-          <p>Pins are qualified public try-spots only — not every purchaser.</p>
-          {!embed && (
-            <p>
-              Map {origin ? `centered on ${origin.label}` : 'of the United States'} · {ranked.length}{' '}
-              listed
-            </p>
-          )}
+        <div className="mx-auto flex max-w-[1100px] flex-col gap-2 px-5 py-8 text-sm text-ink-soft md:flex-row md:items-center md:justify-between md:px-8">
+          <p>{visitorCopy.footer}</p>
+          <OsmCredit />
         </div>
       </footer>
     </>
+  )
+}
+
+function OsmCredit({ className = '' }: { className?: string }) {
+  return (
+    <p className={className}>
+      Map and place search data{' '}
+      <a
+        className="focus-ring rounded-sm underline decoration-line underline-offset-4 hover:text-ink"
+        href="https://www.openstreetmap.org/copyright"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        © OpenStreetMap contributors
+      </a>
+    </p>
   )
 }
 

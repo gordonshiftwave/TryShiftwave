@@ -138,6 +138,11 @@ export function hoursAreUnavailable(value: string): boolean {
   return !value.trim() || /^hours unavailable$/i.test(value.trim())
 }
 
+/** True only when the feed published real hours. */
+export function hasListedHours(value: string): boolean {
+  return Boolean(value.trim()) && !hoursAreUnavailable(value)
+}
+
 /** Blank, null, and non-numeric values stay null. They must not become 0. */
 export function parseCoordinate(value: unknown): number | null {
   if (value == null || typeof value === 'boolean') return null
@@ -347,11 +352,23 @@ function isCityLevelAddress(line: string, city: string, state: string, zip: stri
   return variants.some((parts) => compact(parts.filter(Boolean).join(' ')) === a)
 }
 
-export function formatAddress(place: LocationRecord): string {
+type AddressFields = {
+  street: string
+  city: string
+  state: string
+  zip: string
+}
+
+export function addressLines(place: AddressFields): { street: string; locality: string } {
   const stateLabel = place.city ? place.state : stateName(place.state)
   const cityState = [place.city, stateLabel].filter(Boolean).join(', ')
   const locality = place.zip ? (cityState ? `${cityState} ${place.zip}` : place.zip) : cityState
-  return [place.street, locality].filter(Boolean).join(', ')
+  return { street: place.street.trim(), locality }
+}
+
+export function formatAddress(place: AddressFields): string {
+  const lines = addressLines(place)
+  return [lines.street, lines.locality].filter(Boolean).join(', ')
 }
 
 export function mapsUrl(place: LocationRecord): string {
