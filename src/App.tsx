@@ -13,7 +13,14 @@ import {
 import { feedVisitorMessage } from './data/feedCopy'
 import { loadLocations, type FeedStatus } from './data/load'
 import { formatAddress } from './data/parse'
-import { milesBetween, prefersReducedMotion, rankByDistance } from './geo/distance'
+import { sameCountry } from './geo/country'
+import {
+  distanceUnit,
+  prefersReducedMotion,
+  radiusInMiles,
+  rankByDistance,
+  type DistanceUnit,
+} from './geo/distance'
 import { geocodeQuery, reverseGeocode } from './geo/geocode'
 import { statesMatch } from './geo/states'
 import { readEmbedMode } from './embed'
@@ -40,7 +47,7 @@ export function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [popupId, setPopupId] = useState<string | null>(null)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
-  const [focus, setFocus] = useState<MapFocus>({ type: 'us' })
+  const [focus, setFocus] = useState<MapFocus>({ type: 'world' })
   const [geoNote, setGeoNote] = useState<string | null>(null)
   const searchSeq = useRef(0)
 
@@ -79,16 +86,13 @@ export function App() {
     return rankByDistance(origin, places)
   }, [places, origin])
 
+  const unit: DistanceUnit = origin ? distanceUnit(origin.countryCode) : 'mi'
+  const radiusMiles = radiusInMiles(radius, unit)
+
   const nearby = useMemo(() => {
     if (!origin) return []
-    if (origin.kind === 'state' && origin.state) {
-      const inState = ranked.filter((place) => matchesState(place, origin.state))
-      if (inState.length) return inState
-    }
-    return ranked.filter(
-      (place) => place.distanceMiles != null && place.distanceMiles <= radius,
-    )
-  }, [origin, ranked, radius])
+    return placesWithin(origin, ranked, radiusMiles)
+  }, [origin, ranked, radiusMiles])
 
   const closestFallback = ranked.slice(0, 3)
   const emptyNearby = Boolean(origin) && nearby.length === 0 && placesReady && places.length > 0
@@ -102,28 +106,22 @@ export function App() {
 
   useEffect(() => {
     if (!origin) {
-      setFocus({ type: 'us' })
+      setFocus({ type: 'world' })
       setSelectedId(null)
       return
     }
-    const scored = places
-      .map((place) => ({ place, distance: milesBetween(origin, place) }))
-      .sort((a, b) => a.distance - b.distance)
-    const matches =
-      origin.kind === 'state' && origin.state
-        ? scored.filter((row) => matchesState(row.place, origin.state))
-        : scored.filter((row) => row.distance <= radius)
-    const pool = matches.length ? matches : scored.slice(0, 3)
+    const matches = placesWithin(origin, ranked, radiusMiles)
+    const pool = matches.length ? matches : ranked.slice(0, 3)
     setFocus({
       type: 'fit',
-      coords: [origin, ...pool.map((row) => row.place)],
+      coords: [origin, ...pool],
     })
     setPopupId(null)
     setSelectedId((current) => {
-      if (current && pool.some((row) => row.place.id === current)) return current
-      return matches[0]?.place.id ?? pool[0]?.place.id ?? null
+      if (current && pool.some((place) => place.id === current)) return current
+      return matches[0]?.id ?? pool[0]?.id ?? null
     })
-  }, [origin, places, radius])
+  }, [origin, ranked, radiusMiles])
 
   useEffect(() => {
     if (!selectedId) return
@@ -185,9 +183,15 @@ export function App() {
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
         const { latitude: lat, longitude: lng } = pos.coords
-        const label = await reverseGeocode(lat, lng)
+        const place = await reverseGeocode(lat, lng)
         setStatus('ready')
-        applyOrigin({ lat, lng, label, kind: 'geolocation' })
+        applyOrigin({
+          lat,
+          lng,
+          label: place.label,
+          kind: 'geolocation',
+          countryCode: place.countryCode,
+        })
       },
       (err) => {
         setStatus('ready')
@@ -219,13 +223,13 @@ export function App() {
     setError(null)
     setGeoNote(null)
     setQuery('')
-    setFocus({ type: 'us' })
+    setFocus({ type: 'world' })
     setStatus((current) => (current === 'searching' || current === 'locating' ? 'ready' : current))
   }
 
   const resultLabel = origin
     ? emptyNearby
-      ? noneWithinLabel(radius, origin.label)
+      ? noneWithinLabel(radius, origin.label, unit)
       : placesNearLabel(nearby.length, origin.label)
     : ''
 
@@ -256,6 +260,7 @@ export function App() {
           geoNote={geoNote}
           resultLabel={!placesReady ? visitorCopy.loadingPlaces : resultLabel}
           radius={radius}
+          unit={unit}
           onRadius={setRadius}
           feedStatus={feedStatus}
           noQualified={placesReady && feedStatus === 'ok' && places.length === 0}
@@ -388,6 +393,7 @@ type ResultsViewProps = {
   geoNote: string | null
   resultLabel: string
   radius: number
+  unit: DistanceUnit
   onRadius: (miles: number) => void
   feedStatus: FeedStatus | 'loading'
   noQualified: boolean
@@ -418,6 +424,7 @@ function ResultsView({
   geoNote,
   resultLabel,
   radius,
+  unit,
   onRadius,
   feedStatus,
   noQualified,
@@ -489,7 +496,7 @@ function ResultsView({
                   onClick={() => onRadius(miles)}
                   aria-pressed={radius === miles}
                 >
-                  {miles} mi
+                  {miles} {unit}
                 </button>
               ))}
             </div>
@@ -523,7 +530,7 @@ function ResultsView({
             <div className="mb-4">
               <EmptyState
                 title={visitorCopy.nothingNearbyTitle}
-                body={nothingNearbyBody(radius, originLabel ?? 'there')}
+                body={nothingNearbyBody(radius, originLabel ?? 'there', unit)}
               />
             </div>
           )}
@@ -542,6 +549,7 @@ function ResultsView({
                 <LocationCard
                   place={place}
                   origin={origin}
+                  unit={unit}
                   active={place.id === selectedId}
                   onSelect={() => onSelect(place.id)}
                   onHover={onHover}
@@ -555,6 +563,7 @@ function ResultsView({
           <MapCanvas
             locations={ranked}
             origin={origin}
+            unit={unit}
             selectedId={selectedId}
             hoveredId={hoveredId}
             focus={focus}
@@ -596,4 +605,25 @@ function matchesState(place: LocationRecord, state?: string): boolean {
   if (!state) return false
   if (statesMatch(place.state, state)) return true
   return formatAddress(place).toLowerCase().includes(state.trim().toLowerCase())
+}
+
+/** State or country when any place matches. Otherwise the radius, in miles internally. */
+function placesWithin(
+  origin: GeocodeResult,
+  ranked: RankedLocation[],
+  radiusMiles: number,
+): RankedLocation[] {
+  if (origin.kind === 'state' && origin.state) {
+    const inState = ranked.filter((place) => matchesState(place, origin.state))
+    if (inState.length) return inState
+  }
+  if (origin.kind === 'country') {
+    const inCountry = ranked.filter((place) =>
+      sameCountry(place.country, origin.countryCode, origin.country),
+    )
+    if (inCountry.length) return inCountry
+  }
+  return ranked.filter(
+    (place) => place.distanceMiles != null && place.distanceMiles <= radiusMiles,
+  )
 }

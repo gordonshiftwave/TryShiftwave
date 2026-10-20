@@ -1,6 +1,18 @@
 import type { Coord } from '../types'
 
 const EARTH_MILES = 3958.8
+const KM_PER_MILE = 1.609344
+
+export type DistanceUnit = 'mi' | 'km'
+
+/** Miles when the searched place is in the United States. Kilometers everywhere else. */
+export function distanceUnit(countryCode?: string): DistanceUnit {
+  return (countryCode ?? '').trim().toUpperCase() === 'US' ? 'mi' : 'km'
+}
+
+export function radiusInMiles(radius: number, unit: DistanceUnit): number {
+  return unit === 'mi' ? radius : radius / KM_PER_MILE
+}
 
 export function milesBetween(a: Coord, b: Coord): number {
   const φ1 = toRad(a.lat)
@@ -13,9 +25,20 @@ export function milesBetween(a: Coord, b: Coord): number {
 }
 
 export function formatMiles(miles: number): string {
-  if (miles < 0.1) return '< 0.1 mi'
-  if (miles < 10) return `${miles.toFixed(1)} mi`
-  return `${Math.round(miles)} mi`
+  return formatDistance(miles, 'mi')
+}
+
+export function formatDistance(miles: number, unit: DistanceUnit): string {
+  const value = unit === 'km' ? miles * KM_PER_MILE : miles
+  const suffix = unit === 'km' ? 'km' : 'mi'
+  if (value < 0.1) return `< 0.1 ${suffix}`
+  if (value < 10) return `${value.toFixed(1)} ${suffix}`
+  return `${Math.round(value)} ${suffix}`
+}
+
+export function unitWord(unit: DistanceUnit, count = 2): string {
+  if (unit === 'km') return count === 1 ? 'kilometer' : 'kilometers'
+  return count === 1 ? 'mile' : 'miles'
 }
 
 export function rankByDistance<T extends Coord>(

@@ -88,6 +88,49 @@ describe('visit_model publish gate', () => {
     assert.equal(isPublishable({ ...base, consent: false }), false)
   })
 
+  it('keeps international postal codes and country, and omits a blank country', () => {
+    const csv = parseCsv(
+      `Name,Email,Id,Tags,Shipping Company,Shipping City,Shipping Province,Shipping Zip,Shipping Country,Shipping Address1
+#2001,london@example.com,9,sw-business,Example London,London,,SW1A 1AA,United Kingdom,1 The Mall
+#2002,berlin@example.com,10,sw-business,Example Berlin,Berlin,,10115,Germany,1 Unter den Linden
+#2003,sydney@example.com,11,sw-business,Example Sydney,Sydney,NSW,2000,Australia,1 George St
+`,
+    )
+    const rows = csvOrdersToStagingRows(csv)
+    assert.equal(rows[0].zip, 'SW1A 1AA')
+    assert.equal(rows[0].country, 'United Kingdom')
+    assert.equal(rows[1].zip, '10115')
+    assert.equal(rows[1].country, 'Germany')
+    assert.equal(rows[2].zip, '2000')
+    assert.equal(rows[2].country, 'Australia')
+    assert.equal(rows[0].visit_model, 'none')
+    assert.equal(isPublishable(rows[0]), false)
+
+    const pub = toPublicLocation({ ...base, country: 'United Kingdom', zip: 'SW1A 1AA' })
+    assert.equal(pub.country, 'United Kingdom')
+    assert.equal(pub.zip, 'SW1A 1AA')
+    assert.equal(toPublicLocation(base).country, undefined)
+
+    const fromApi = graphqlOrdersToStagingRows([
+      {
+        id: 'gid://shopify/Order/9',
+        name: '#2001',
+        email: 'toronto@example.com',
+        tags: ['sw-business'],
+        shippingAddress: {
+          company: 'Example Toronto',
+          city: 'Toronto',
+          provinceCode: 'ON',
+          zip: 'M5V 2T6',
+          countryCodeV2: 'CA',
+          country: 'Canada',
+        },
+      },
+    ])
+    assert.equal(fromApi[0].zip, 'M5V 2T6')
+    assert.equal(fromApi[0].country, 'CA')
+  })
+
   it('new CSV intake defaults visit_model to none until qualify', () => {
     const csv = parseCsv(`Name,Email,Id,Tags,Shipping Company,Shipping City,Shipping Province,Shipping Zip,Shipping Address1
 #1042,ops.oasis@example.com,1,sw-business,Oasis Recovery Studio,Austin,TX,78701,100 Congress Ave

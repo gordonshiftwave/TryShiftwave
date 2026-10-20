@@ -85,7 +85,7 @@ export function SearchBar({
       role="search"
     >
       <label htmlFor={inputId} className="sr-only">
-        ZIP, city, or address
+        {visitorCopy.searchPlaceholder}
       </label>
 
       <div
@@ -108,7 +108,9 @@ export function SearchBar({
             name="q"
             value={query}
             onChange={(event) => handleQueryInput(event.target.value)}
-            placeholder={isHero ? 'ZIP, city, or address' : 'Search ZIP, city, or address'}
+            placeholder={
+              isHero ? visitorCopy.searchPlaceholder : visitorCopy.searchPlaceholderCompact
+            }
             autoComplete="off"
             enterKeyHint="search"
             disabled={disabled}

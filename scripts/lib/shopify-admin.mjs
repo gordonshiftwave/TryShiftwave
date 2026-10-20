@@ -40,6 +40,8 @@ query StageTaggedOrders($query: String!, $cursor: String) {
           provinceCode
           province
           zip
+          countryCodeV2
+          country
           phone
         }
         billingAddress {
@@ -50,6 +52,8 @@ query StageTaggedOrders($query: String!, $cursor: String) {
           provinceCode
           province
           zip
+          countryCodeV2
+          country
           phone
         }
       }

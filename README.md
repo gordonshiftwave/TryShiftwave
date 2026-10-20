@@ -17,7 +17,7 @@ If that URL 404s, the GitHub repo admin enables Pages once: **Settings → Pages
 
 [`public/locations.json`](public/locations.json) is the **published** snapshot of qualified try-spots (historical source: the partner *Shiftwave Clinic & Commercial List*, “Can we send people there to Demo?” = YES). The standing intake path is a **system + named roles** — Shopify tagging → staging queue → Review owner (role) qualify → this file (or `VITE_LOCATIONS_URL`) — see [`OPS.md`](OPS.md) and [`INTEGRATION.md`](INTEGRATION.md). No Shopify in the client, no Google write access, no secrets. Do not assign review to Dani (or any one person) by default.
 
-> Live partner list. Only **qualified** public try-spots appear on the map (public-facing, demo consent, `visit_model` walk-in or appointment). Pins are still city/ZIP (the sheet has no street-address column). Hours are public listing hours where found, otherwise **Hours unavailable**. Ambassadors, pop-ups, booking, and heat maps are out of scope here.
+> Live partner list. Only **qualified** public try-spots appear on the map (public-facing, demo consent, `visit_model` walk-in or appointment). Pins are still city and postal code (the sheet has no street-address column). Hours are public listing hours where found, otherwise **Hours unavailable**. Ambassadors, pop-ups, booking, and heat maps are out of scope here.
 
 ## Run locally
 
@@ -37,16 +37,16 @@ npm run preview
 
 `npm run build` writes a static site to `dist/` (Vite + React + TypeScript). Asset URLs follow Vite `base`: `/TryShiftwave/` unless `VITE_BASE` is set. `npm run preview` serves that build at [http://localhost:4173/TryShiftwave/](http://localhost:4173/TryShiftwave/) with the default Pages base. No Mapbox/Google Maps API key is required: the map uses [MapLibre GL](https://maplibre.org/) with [OpenFreeMap](https://openfreemap.org/) vector tiles. MapLibre’s worker and `public/` files (`locations.json`, `us-states.json`, favicon) are resolved under that base path.
 
-Geocoding uses Zippopotam.us (US ZIP codes) with OpenStreetMap Nominatim / Photon as fallback. Please keep OSM attribution visible (MapLibre adds it).
+Geocoding uses Zippopotam.us for a bare US ZIP, then OpenStreetMap Nominatim and Photon for any city, street, or postal code. There is no country limit and no API key. Please keep OSM attribution visible (MapLibre adds it). Search runs only when the visitor submits, at most about one Nominatim request per second.
 
 ## Product behavior
 
-- One job on load: a centered ZIP / city / address search (Google “find a place near me,” not a dashboard)
+- One job on load: a centered city, address, or postal-code search (Google “find a place near me,” not a dashboard). The map opens on a world view.
 - Map and results appear **after** search or **Use my location**
 - **Use my location**, with a clear fallback if permission is denied or the page is not HTTPS
-- Results as a simple list with distance; pins synced to the list; state click-to-zoom at national zoom
-- Each place: name, distance (mi), address (Google Maps link), hours, phone and/or email. Appointment-only partners show **By appointment. Call to schedule.** (not walk-in language). Walk-in pins stay unlabeled. `none` is never listed.
-- Empty / no-nearby state shows the closest qualified try-spots
+- Results as a simple list with distance; pins synced to the list. US state outlines appear when the map is zoomed in.
+- Each place: name, distance, address (Google Maps link), hours, phone and/or email. Distance is miles when the searched place is in the United States, and kilometers otherwise. Appointment-only partners show **By appointment. Call to schedule.** (not walk-in language). Walk-in pins stay unlabeled. `none` is never listed.
+- Empty / no-nearby state points to the enquiry form below the finder and shows the closest qualified try-spots anywhere
 - Mobile-first layout; `prefers-reduced-motion` disables fly/fit animation and the results reveal
 
 Brand tokens match [shiftwave.co](https://shiftwave.co/) for merge — Montserrat 500/600, ink `#3C3B3B`, paper `#F7F4EF` / white, black Search CTA. Brand Guide orange `#E43A00` and purple `#3911AC` are pin/highlight accents only. The Fraunces listening-surface stack is Stethoscope/Wave only. See [`DESIGN.md`](DESIGN.md).
@@ -102,8 +102,9 @@ Header row of the Google Sheet should use these names (snake_case). Aliases such
 | `name` | yes | Public business name |
 | `street` | if known | Street line. Leave blank rather than inventing. `address` that is only “City, State ZIP” is not treated as a street. |
 | `city` | preferred | May be missing for a few rows |
-| `state` | yes | Full name or two-letter USPS code (`California` or `CA`) |
-| `zip` | preferred | 5-digit ZIP |
+| `state` | preferred | Region. USPS code or full name in the US (`CA` or `California`). A province or region elsewhere. `N/A` is treated as blank. |
+| `zip` | preferred | Postal code. US ZIP, UK `SW1A 1AA`, Canadian `M5V`, or another country's code. Not truncated to 5 digits when it contains letters or is not a US ZIP. |
+| `country` | for non-US | Country name or 2-letter code. Blank means the United States, so existing US rows stay unchanged. |
 | `lat` | yes | WGS84 latitude |
 | `lng` | yes | WGS84 longitude |
 | `phone` | if no email | Display + `tel:` link |

@@ -98,7 +98,7 @@ Merging that commit to `main` is the preview deploy (`.github/workflows/deploy-p
 
 1. `npm test` locally, or look at the Test workflow on the pull request.
 2. After `main` deploys, open `https://gordonshiftwave.github.io/TryShiftwave/locations.json` and check `count` and the `id` you changed. Do not look for `notes`, order ids, or review names; those must be absent.
-3. Open `https://gordonshiftwave.github.io/TryShiftwave/?embed=1`. Search a ZIP near the pin.
+3. Open `https://gordonshiftwave.github.io/TryShiftwave/?embed=1`. Search a city or postal code near the pin. A US search shows miles. A search outside the US shows kilometers.
 4. Appointment partners show the appointment line. Withdrawn ids do not appear.
 5. On the Shopify Try page, confirm the iframe is about 720px tall and the existing forms still submit underneath it.
 

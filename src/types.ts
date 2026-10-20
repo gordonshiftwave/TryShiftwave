@@ -11,6 +11,8 @@ export type LocationRecord = {
   city: string
   state: string
   zip: string
+  /** Blank on the historical US list. A name or 2-letter code for other countries. */
+  country: string
   lat: number
   lng: number
   phone: string
@@ -40,12 +42,16 @@ export type Coord = {
   lng: number
 }
 
-export type GeocodeKind = 'zip' | 'city' | 'address' | 'state' | 'geolocation'
+export type GeocodeKind = 'zip' | 'city' | 'address' | 'state' | 'country' | 'geolocation'
 
 export type GeocodeResult = Coord & {
   label: string
   kind: GeocodeKind
   state?: string
+  /** Country name when the geocoder returned one. */
+  country?: string
+  /** ISO 3166-1 alpha-2. Miles are used only when this is US. */
+  countryCode?: string
 }
 
 export type RankedLocation = LocationRecord & {
@@ -75,8 +81,8 @@ export function categoryLabel(category: string): string {
 
 export const NEARBY_RADIUS_OPTIONS = [25, 50, 100] as const
 export const DEFAULT_RADIUS_MILES = 50
-/** Continental US — used so a tall map pane still shows both coasts. */
-export const CONUS_BOUNDS: [[number, number], [number, number]] = [
-  [-125.2, 24.3],
-  [-66.5, 49.4],
+/** Opening view: most inhabited land, not a US-only frame. */
+export const WORLD_BOUNDS: [[number, number], [number, number]] = [
+  [-140, -50],
+  [160, 72],
 ]

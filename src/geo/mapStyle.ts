@@ -90,6 +90,7 @@ export function addStateLayers(map: MapLibreMap): void {
       id: 'state-fill',
       type: 'fill',
       source: 'us-states',
+      minzoom: 3.5,
       maxzoom: 5.8,
       paint: {
         'fill-color': tokens.energy,
@@ -104,6 +105,7 @@ export function addStateLayers(map: MapLibreMap): void {
       id: 'state-line',
       type: 'line',
       source: 'us-states',
+      minzoom: 3.5,
       maxzoom: 6.2,
       paint: {
         'line-color': tokens.calm,
@@ -119,6 +121,7 @@ export function addStateLayers(map: MapLibreMap): void {
       id: 'state-hover',
       type: 'fill',
       source: 'us-states',
+      minzoom: 3.5,
       maxzoom: 5.8,
       paint: {
         'fill-color': tokens.calm,

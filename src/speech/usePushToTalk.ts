@@ -41,12 +41,12 @@ export function speechRecognitionSupported(): boolean {
 }
 
 export const speechVisitorNotes = {
-  unsupported: "Voice search isn't available in this browser. Type a ZIP or city instead.",
-  denied: 'Microphone permission is off. Type a ZIP or city instead.',
-  noMic: 'No microphone found. Type a ZIP or city instead.',
-  network: 'Voice search needs a connection. Type a ZIP or city instead.',
+  unsupported: "Voice search isn't available in this browser. Type a city or postal code instead.",
+  denied: 'Microphone permission is off. Type a city or postal code instead.',
+  noMic: 'No microphone found. Type a city or postal code instead.',
+  network: 'Voice search needs a connection. Type a city or postal code instead.',
   noSpeech: "Didn't catch that. Tap the mic and try again.",
-  failed: "Voice search didn't work. Type a ZIP or city instead.",
+  failed: "Voice search didn't work. Type a city or postal code instead.",
   listening: 'Listening. Your words appear in the search box. Tap the mic to stop.',
 } as const
 

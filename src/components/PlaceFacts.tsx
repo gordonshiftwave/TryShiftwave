@@ -1,6 +1,6 @@
 import { visitorCopy } from '../copy/visitor'
 import { addressLines, hasListedHours, telHref } from '../data/parse'
-import { formatMiles } from '../geo/distance'
+import { formatDistance, type DistanceUnit } from '../geo/distance'
 import { directionsHref } from '../geo/directions'
 import type { Coord, RankedLocation } from '../types'
 
@@ -10,6 +10,7 @@ type PlaceFactsProps = {
   /** Selected row or map popup: show the street note when we only have a city. */
   detailed?: boolean
   showName?: boolean
+  unit?: DistanceUnit
   onChoose?: (id: string) => void
 }
 
@@ -18,6 +19,7 @@ export function PlaceFacts({
   origin,
   detailed = false,
   showName = false,
+  unit = 'mi',
   onChoose,
 }: PlaceFactsProps) {
   const lines = addressLines(place)
@@ -36,7 +38,7 @@ export function PlaceFacts({
             <p className="place-facts__name">{place.name}</p>
           )}
           {place.distanceMiles != null && (
-            <span className="distance-chip">{formatMiles(place.distanceMiles)}</span>
+            <span className="distance-chip">{formatDistance(place.distanceMiles, unit)}</span>
           )}
         </div>
       )}
@@ -49,6 +51,7 @@ export function PlaceFacts({
         ) : (
           <p className="place-facts__locality">Address not listed yet.</p>
         )}
+        {lines.country ? <p className="place-facts__locality">{lines.country}</p> : null}
         {detailed && !lines.street && <p className="place-facts__note">{visitorCopy.streetMissing}</p>}
       </div>
 

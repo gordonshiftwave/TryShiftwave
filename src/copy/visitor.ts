@@ -1,12 +1,17 @@
+import type { DistanceUnit } from '../geo/distance'
+import { unitWord } from '../geo/distance'
+
 /** Visitor-facing sentences. Periods and commas only, no coined punctuation. */
 
 export const visitorCopy = {
-  searchMiss: "We couldn't find that place. Try a street address, city, or ZIP code.",
-  geoUnsupported: "This browser can't share a location. Search a ZIP or city instead.",
-  geoInsecure: 'Location needs a secure connection. Search a ZIP instead.',
-  geoDenied: 'Location permission is off. Search a ZIP or city instead.',
-  geoTimeout: 'Location timed out. Try again, or search a ZIP.',
-  geoFailed: "We couldn't read your location. Try a city or ZIP.",
+  searchMiss: "We couldn't find that place. Try a street address, city, or postal code.",
+  geoUnsupported: "This browser can't share a location. Search a city or postal code instead.",
+  geoInsecure: 'Location needs a secure connection. Search a city or postal code instead.',
+  geoDenied: 'Location permission is off. Search a city or postal code instead.',
+  geoTimeout: 'Location timed out. Try again, or search a city or postal code.',
+  geoFailed: "We couldn't read your location. Try a city or postal code.",
+  searchPlaceholder: 'City, address, or postal code',
+  searchPlaceholderCompact: 'Search a city, address, or postal code',
   loadingPlaces: 'Loading places...',
   searching: 'Searching...',
   locating: 'Locating...',
@@ -17,9 +22,9 @@ export const visitorCopy = {
   listUnreadableTitle: "The list couldn't be read",
   closestHeading: 'Closest places',
   noPlacesBody:
-    'There are no public places to try Shiftwave right now. Use the request form below this finder.',
+    'There are no public places to try Shiftwave right now. Use the enquiry form below this finder.',
   banner:
-    'Public places where you can try Shiftwave. Hours show when we have them. Some places are listed by city and ZIP until a street address is added.',
+    'Public places where you can try Shiftwave. Hours show when we have them. Some places are listed by city and postal code until a street address is added.',
   footer: 'These are public places to try Shiftwave. Not every purchaser is listed.',
   addressLabel: 'Address',
   directions: 'Directions',
@@ -32,10 +37,10 @@ export function placesNearLabel(count: number, label: string): string {
   return `${count} ${noun} near ${label}`
 }
 
-export function noneWithinLabel(radius: number, label: string): string {
-  return `No places within ${radius} miles of ${label}`
+export function noneWithinLabel(radius: number, label: string, unit: DistanceUnit): string {
+  return `No places within ${radius} ${unitWord(unit, radius)} of ${label}`
 }
 
-export function nothingNearbyBody(radius: number, label: string): string {
-  return `No public place within ${radius} miles of ${label}. Here are the closest places.`
+export function nothingNearbyBody(radius: number, label: string, unit: DistanceUnit): string {
+  return `No public place within ${radius} ${unitWord(unit, radius)} of ${label}. Use the enquiry form below this finder. Here are the closest places.`
 }
