@@ -17,7 +17,7 @@ If that URL 404s, the GitHub repo admin enables Pages once: **Settings → Pages
 
 [`public/locations.json`](public/locations.json) is the **published** snapshot of qualified try-spots (historical source: the partner *Shiftwave Clinic & Commercial List*, “Can we send people there to Demo?” = YES). The standing intake path is a **system + named roles** — Shopify tagging → staging queue → Review owner (role) qualify → this file (or `VITE_LOCATIONS_URL`) — see [`OPS.md`](OPS.md) and [`INTEGRATION.md`](INTEGRATION.md). No Shopify in the client, no Google write access, no secrets. Do not assign review to Dani (or any one person) by default.
 
-> Live partner list. Only **qualified** public try-spots appear on the map (public-facing, demo consent, `visit_model` walk-in or appointment). Pins are still city/ZIP (the sheet has no street-address column). Hours are public listing hours where found, otherwise **Hours unavailable**. Ambassadors, pop-ups, booking, and heat maps are out of scope here.
+> Live partner list. Only **qualified** public try-spots appear on the map (public-facing, demo consent, `visit_model` walk-in or appointment). Pins are still city and postal code (the sheet has no street-address column). Hours are public listing hours where found, otherwise **Hours unavailable**. Ambassadors, pop-ups, booking, and heat maps are out of scope here.
 
 ## Run locally
 
