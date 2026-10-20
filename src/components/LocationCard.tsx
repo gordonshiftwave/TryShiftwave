@@ -1,6 +1,6 @@
 import { PlaceFacts } from './PlaceFacts'
 import { categoryLabel, pinKind, visitModelLabel, type LocationCategory, type RankedLocation } from '../types'
-import { formatMiles } from '../geo/distance'
+import { formatDistance, type DistanceUnit } from '../geo/distance'
 import type { Coord } from '../types'
 
 const PIN_COLOR: Record<LocationCategory, string> = {
@@ -16,9 +16,10 @@ type LocationCardProps = {
   active: boolean
   onSelect: () => void
   onHover: (id: string | null) => void
+  unit: DistanceUnit
 }
 
-export function LocationCard({ place, origin, active, onSelect, onHover }: LocationCardProps) {
+export function LocationCard({ place, origin, active, onSelect, onHover, unit }: LocationCardProps) {
   const visitLabel = visitModelLabel(place.visitModel)
 
   return (
@@ -57,10 +58,10 @@ export function LocationCard({ place, origin, active, onSelect, onHover }: Locat
             {visitLabel && <p className="visit-label visit-label--appointment mt-1">{visitLabel}</p>}
           </div>
           {place.distanceMiles != null && (
-            <span className="distance-chip mt-0.5">{formatMiles(place.distanceMiles)}</span>
+            <span className="distance-chip mt-0.5">{formatDistance(place.distanceMiles, unit)}</span>
           )}
         </div>
-        <PlaceFacts place={place} origin={origin} detailed={active} />
+        <PlaceFacts place={place} origin={origin} detailed={active} unit={unit} />
       </div>
     </article>
   )

@@ -6,8 +6,8 @@ import { setWorkerUrl } from 'maplibre-gl'
 import type { Map as MapLibreMap, Marker, Popup } from 'maplibre-gl'
 import type { Feature, Polygon, MultiPolygon } from 'geojson'
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
-import { CONUS_BOUNDS, pinKind, type Coord, type RankedLocation } from '../types'
-import { prefersReducedMotion } from '../geo/distance'
+import { WORLD_BOUNDS, pinKind, type Coord, type RankedLocation } from '../types'
+import { prefersReducedMotion, type DistanceUnit } from '../geo/distance'
 import { coordinateKey, groupByCoordinate } from '../geo/groups'
 import { addStateLayers, applyPaperTheme, boundsFromPositions } from '../geo/mapStyle'
 import { PlaceFacts } from './PlaceFacts'
@@ -22,13 +22,14 @@ setWorkerUrl(resolvedWorker.endsWith('.mjs') ? resolvedWorker : `${resolvedWorke
 
 
 export type MapFocus =
-  | { type: 'us' }
+  | { type: 'world' }
   | { type: 'fit'; coords: Coord[] }
   | { type: 'pin'; coord: Coord }
 
 type MapCanvasProps = {
   locations: RankedLocation[]
   origin: Coord | null
+  unit?: DistanceUnit
   selectedId: string | null
   hoveredId: string | null
   focus: MapFocus
@@ -41,6 +42,7 @@ type MapCanvasProps = {
 export function MapCanvas({
   locations,
   origin,
+  unit = 'mi',
   selectedId,
   hoveredId,
   focus,
@@ -69,7 +71,7 @@ export function MapCanvas({
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: 'https://tiles.openfreemap.org/styles/positron',
-      bounds: CONUS_BOUNDS,
+      bounds: WORLD_BOUNDS,
       fitBoundsOptions: { padding: 28 },
       attributionControl: { compact: true },
       cooperativeGestures: true,
@@ -213,6 +215,7 @@ export function MapCanvas({
               <PlaceFacts
                 place={row}
                 origin={origin}
+                unit={unit}
                 detailed
                 showName
                 onChoose={(id) => onSelectRef.current(id)}
@@ -280,14 +283,14 @@ export function MapCanvas({
       // Unmount on the next turn so this cleanup does not run inside a React render.
       window.setTimeout(() => root.unmount(), 0)
     }
-  }, [popupId, locations, origin])
+  }, [popupId, locations, origin, unit])
 
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
     const duration = prefersReducedMotion() ? 0 : 1100
-    if (focus.type === 'us') {
-      map.fitBounds(CONUS_BOUNDS, { padding: 28, duration })
+    if (focus.type === 'world') {
+      map.fitBounds(WORLD_BOUNDS, { padding: 28, duration })
       return
     }
     if (focus.type === 'pin') {

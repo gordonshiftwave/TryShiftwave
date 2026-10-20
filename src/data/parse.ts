@@ -1,5 +1,6 @@
 import type { LocationRecord, VisitModel } from '../types'
 import { VISIT_MODELS } from '../types'
+import { treatsAsUnitedStates } from '../geo/country'
 import { normalizeState, stateName } from '../geo/states'
 
 /**
@@ -17,6 +18,8 @@ export const LOCATION_FIELDS = [
   'city',
   'state',
   'zip',
+  'country',
+  'contact',
   'lat',
   'lng',
   'phone',
@@ -42,6 +45,7 @@ const KEY_ALIASES: Record<string, LocationField> = {
   business: 'name',
   business_name: 'name',
   location_name: 'name',
+  clinic: 'name',
   street: 'street',
   address: 'address',
   address1: 'street',
@@ -51,14 +55,20 @@ const KEY_ALIASES: Record<string, LocationField> = {
   state_code: 'state',
   zip: 'zip',
   zip_code: 'zip',
+  zipcode: 'zip',
   postal: 'zip',
   postal_code: 'zip',
+  postcode: 'zip',
   lat: 'lat',
   latitude: 'lat',
   lng: 'lng',
   lon: 'lng',
   long: 'lng',
   longitude: 'lng',
+  country: 'country',
+  country_code: 'country',
+  country_name: 'country',
+  contact: 'contact',
   phone: 'phone',
   tel: 'phone',
   telephone: 'phone',
@@ -81,6 +91,7 @@ const KEY_ALIASES: Record<string, LocationField> = {
   demo_consent: 'demo_consent',
   consent: 'demo_consent',
   demo_ok: 'demo_consent',
+  can_we_send_people_there_to_demo: 'demo_consent',
   walk_in_ok: 'walk_in_ok',
   walk_in: 'walk_in_ok',
   walkin: 'walk_in_ok',
@@ -94,7 +105,13 @@ const KEY_ALIASES: Record<string, LocationField> = {
 }
 
 export function normalizeKey(raw: string): string {
-  return raw.trim().toLowerCase().replace(/[\s/|.-]+/g, '_')
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/[?]+/g, '')
+    .replace(/[\s/|.-]+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '')
 }
 
 export function parseBool(value: unknown): boolean {
@@ -219,12 +236,14 @@ export function parseRow(
 
   const id = str(src.id) || slug(`${name}-${index}`)
   const city = str(src.city)
-  const state = normalizeState(str(src.state))
-  const zip = str(src.zip)
+  const state = cleanRegion(normalizeState(str(src.state)))
+  const zip = cleanPostal(str(src.zip))
+  const country = cleanCountry(str(src.country))
   const street = streetLine(str(src.street), str(src.address), city, state, zip)
   const visitModel = parseVisitModel(src.visit_model, src.walk_in_ok)
   const explicitBool = (value: unknown): boolean =>
     value == null || value === '' ? false : parseBool(value)
+  const contact = splitContact(str(src.phone), str(src.email), str(src.contact))
 
   return {
     id,
@@ -233,10 +252,11 @@ export function parseRow(
     city,
     state,
     zip,
+    country,
     lat,
     lng,
-    phone: formatPhone(str(src.phone)),
-    email: str(src.email),
+    phone: contact.phone,
+    email: contact.email,
     hours: normalizeHours(str(src.hours)),
     website: str(src.website),
     category: categoryOf(src.category),
@@ -357,18 +377,68 @@ type AddressFields = {
   city: string
   state: string
   zip: string
+  country?: string
 }
 
-export function addressLines(place: AddressFields): { street: string; locality: string } {
-  const stateLabel = place.city ? place.state : stateName(place.state)
-  const cityState = [place.city, stateLabel].filter(Boolean).join(', ')
-  const locality = place.zip ? (cityState ? `${cityState} ${place.zip}` : place.zip) : cityState
-  return { street: place.street.trim(), locality }
+export function addressLines(place: AddressFields): {
+  street: string
+  locality: string
+  country: string
+} {
+  const street = place.street.trim()
+  const postal = place.zip.trim()
+  const region = cleanRegion(place.state)
+  if (treatsAsUnitedStates(place.country)) {
+    const stateLabel = place.city ? region : stateName(region)
+    const cityState = [place.city, stateLabel].filter(Boolean).join(', ')
+    const locality = postal ? (cityState ? `${cityState} ${postal}` : postal) : cityState
+    return { street, locality, country: '' }
+  }
+  const cityRegion = [place.city, region].filter(Boolean).join(', ')
+  const locality = [cityRegion, postal].filter(Boolean).join(' ')
+  return { street, locality, country: (place.country ?? '').trim() }
 }
 
 export function formatAddress(place: AddressFields): string {
   const lines = addressLines(place)
-  return [lines.street, lines.locality].filter(Boolean).join(', ')
+  return [lines.street, lines.locality, lines.country].filter(Boolean).join(', ')
+}
+
+function cleanRegion(value: string): string {
+  const text = value.trim()
+  if (!text || /^(n\/a|na|none|unknown|-)$/i.test(text)) return ''
+  return text
+}
+
+function cleanCountry(value: string): string {
+  const text = value.trim()
+  if (!text || /^(n\/a|na|none|unknown|-)$/i.test(text)) return ''
+  return text
+}
+
+function cleanPostal(value: string): string {
+  const text = value.trim()
+  if (!text || /^(n\/a|na|none|unknown|-)$/i.test(text)) return ''
+  return text
+}
+
+/** A sheet "Contact" cell may be an email or a phone. Do not guess which when it is neither. */
+function splitContact(
+  phone: string,
+  email: string,
+  contact: string,
+): { phone: string; email: string } {
+  let nextPhone = phone
+  let nextEmail = email
+  const value = contact.trim()
+  if (value && !/^(n\/a|na|none|unknown|-)$/i.test(value)) {
+    if (value.includes('@')) {
+      if (!nextEmail) nextEmail = value
+    } else if (/\d/.test(value) && !nextPhone) {
+      nextPhone = value
+    }
+  }
+  return { phone: formatPhone(nextPhone), email: nextEmail.trim() }
 }
 
 export function mapsUrl(place: LocationRecord): string {

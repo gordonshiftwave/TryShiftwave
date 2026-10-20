@@ -5,7 +5,8 @@ const ZIP_RE = /^\d{5}(?:-\d{4})?$/
 /**
  * Nominatim asks for at most one request per second and no autocomplete.
  * Search runs only when someone submits the field, and these calls wait
- * their turn. Zippopotam handles a bare ZIP so most searches never reach it.
+ * their turn. A bare US ZIP tries Zippopotam first. Any other city, street,
+ * or postal code goes to Nominatim, then Photon, with no country limit.
  */
 export const NOMINATIM_GAP_MS = 1100
 
@@ -40,7 +41,10 @@ export async function geocodeQuery(input: string): Promise<GeocodeResult | null>
   return (await geocodeNominatim(q)) ?? (await geocodePhoton(q))
 }
 
-export async function reverseGeocode(lat: number, lng: number): Promise<string> {
+export async function reverseGeocode(
+  lat: number,
+  lng: number,
+): Promise<{ label: string; countryCode?: string }> {
   try {
     await pace(NOMINATIM_GAP_MS, nominatimPace)
     const url = new URL('https://nominatim.openstreetmap.org/reverse')
@@ -53,19 +57,33 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string> 
       headers: nominatimHeaders(),
       signal: AbortSignal.timeout(8000),
     })
-    if (!res.ok) return 'Your location'
+    if (!res.ok) return { label: 'Your location' }
     const data = (await res.json()) as {
-      address?: { city?: string; town?: string; village?: string; state?: string }
+      address?: {
+        city?: string
+        town?: string
+        village?: string
+        state?: string
+        country?: string
+        country_code?: string
+      }
       name?: string
     }
     const city =
       data.address?.city || data.address?.town || data.address?.village || data.name
     const state = data.address?.state
-    if (city && state) return `${city}, ${state}`
-    if (city) return city
-    return 'Your location'
+    const country = data.address?.country
+    const countryCode = data.address?.country_code?.toUpperCase()
+    const inUs = countryCode === 'US'
+    let label = 'Your location'
+    if (city && state && inUs) label = `${city}, ${state}`
+    else if (city && country && !inUs) label = `${city}, ${country}`
+    else if (city && state) label = `${city}, ${state}`
+    else if (city) label = city
+    else if (country) label = country
+    return { label, countryCode }
   } catch {
-    return 'Your location'
+    return { label: 'Your location' }
   }
 }
 
@@ -94,6 +112,8 @@ async function geocodeZip(zip: string): Promise<GeocodeResult | null> {
       label: `${place['place name']}, ${place['state abbreviation']} ${zip}`,
       kind: 'zip',
       state: place['state abbreviation'],
+      country: 'United States',
+      countryCode: 'US',
     }
   } catch {
     return null
@@ -106,7 +126,6 @@ async function geocodeNominatim(q: string): Promise<GeocodeResult | null> {
     const url = new URL('https://nominatim.openstreetmap.org/search')
     url.searchParams.set('format', 'jsonv2')
     url.searchParams.set('q', q)
-    url.searchParams.set('countrycodes', 'us')
     url.searchParams.set('limit', '1')
     url.searchParams.set('addressdetails', '1')
     const res = await fetch(url, {
@@ -139,6 +158,7 @@ async function geocodePhoton(q: string): Promise<GeocodeResult | null> {
           city?: string
           state?: string
           postcode?: string
+          country?: string
           countrycode?: string
           osm_value?: string
           osm_key?: string
@@ -146,23 +166,24 @@ async function geocodePhoton(q: string): Promise<GeocodeResult | null> {
       }>
     }
     const feature = data.features?.find((row) => {
-      const code = row.properties?.countrycode
       const coords = row.geometry?.coordinates
-      const inUs = !code || code.toUpperCase() === 'US'
-      return inUs && !!coords && coords.length >= 2
+      return !!coords && coords.length >= 2 && Number.isFinite(coords[0]) && Number.isFinite(coords[1])
     })
     const coords = feature?.geometry?.coordinates
     const props = feature?.properties
     if (!coords || coords.length < 2 || !props) return null
-    if (props.countrycode && props.countrycode.toUpperCase() !== 'US') return null
+    const countryCode = props.countrycode?.toUpperCase()
     const kind = photonKind(props.osm_key, props.osm_value)
-    const labelParts = [props.name || props.city, props.state, props.postcode].filter(Boolean)
+    const labelParts = [props.name || props.city, props.state, props.postcode]
+    if (countryCode && countryCode !== 'US' && props.country) labelParts.push(props.country)
     return {
       lat: coords[1],
       lng: coords[0],
-      label: labelParts.join(', ') || q,
+      label: labelParts.filter(Boolean).join(', ') || q,
       kind,
       state: props.state,
+      country: props.country,
+      countryCode,
     }
   } catch {
     return null
@@ -190,6 +211,8 @@ type NominatimHit = {
     hamlet?: string
     state?: string
     postcode?: string
+    country?: string
+    country_code?: string
   }
 }
 
@@ -202,10 +225,18 @@ function fromNominatim(hit: NominatimHit, fallback: string): GeocodeResult {
     hit.address?.hamlet
   const state = hit.address?.state
   const zip = hit.address?.postcode
+  const country = hit.address?.country
+  const countryCode = hit.address?.country_code?.toUpperCase()
+  const inUs = !countryCode || countryCode === 'US'
   let label = fallback
-  if (kind === 'state' && state) label = state
-  else if (city && state) label = zip ? `${city}, ${state} ${zip}` : `${city}, ${state}`
-  else label = shortenDisplayName(hit.display_name) || fallback
+  if (kind === 'country' && country) label = country
+  else if (kind === 'state' && state) label = inUs || !country ? state : `${state}, ${country}`
+  else if (inUs && city && state) label = zip ? `${city}, ${state} ${zip}` : `${city}, ${state}`
+  else if (!inUs) {
+    const head = city || state
+    const parts = [head, zip, country].filter(Boolean)
+    label = parts.length ? parts.join(', ') : shortenDisplayName(hit.display_name) || fallback
+  } else label = shortenDisplayName(hit.display_name) || fallback
 
   return {
     lat: Number(hit.lat),
@@ -213,11 +244,14 @@ function fromNominatim(hit: NominatimHit, fallback: string): GeocodeResult {
     label,
     kind,
     state,
+    country,
+    countryCode,
   }
 }
 
 function nominatimKind(hit: NominatimHit): GeocodeKind {
   const t = `${hit.addresstype ?? ''} ${hit.type ?? ''}`.toLowerCase()
+  if (hit.addresstype === 'country' || hit.type === 'country') return 'country'
   if (t.includes('postcode') || t.includes('postal')) return 'zip'
   if (t.includes('state') || hit.addresstype === 'state') return 'state'
   if (['city', 'town', 'village', 'hamlet', 'suburb', 'neighbourhood'].some((k) => t.includes(k))) {

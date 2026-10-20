@@ -146,8 +146,9 @@ or a bare array `[ { "...": "row" } ]`. `{ "rows": [ ... ] }` is also accepted.
 | `name` | yes | Public business name |
 | `street` | if known | Street line. Leave blank rather than inventing. |
 | `city` | preferred | May be missing for a few rows |
-| `state` | yes | Full name or two-letter USPS code (`California` or `CA`) |
-| `zip` | preferred | 5-digit ZIP |
+| `state` | preferred | Region. USPS code or full name in the US. A province or region elsewhere. `N/A` is blank. |
+| `zip` | preferred | Postal code in any country. A value with letters is kept whole. A 5-digit or ZIP+4 value is kept as a US ZIP. Other lengths, such as `2000`, are kept as typed. |
+| `country` | for non-US | Country name or code. Blank is treated as the United States and is omitted from the public card. |
 | `lat` | yes | WGS84 latitude |
 | `lng` | yes | WGS84 longitude |
 | `phone` | if no email | Display + `tel:` link |
@@ -160,10 +161,10 @@ or a bare array `[ { "...": "row" } ]`. `{ "rows": [ ... ] }` is also accepted.
 | `public_facing` | yes | Public business, not home use |
 | `demo_consent` | yes | Partner agrees to receive demo visitors |
 | `walk_in_ok` | compat | True when `visit_model` is `walk_in`. Do not use false as a hide. |
-| `visit_model` | yes | `walk_in` \| `appointment` \| `none`. `none` is never listed. Appointment publishes with this flag (finder: “By appointment — call to schedule”). Missing or unknown values do not list. |
+| `visit_model` | yes | `walk_in` \| `appointment` \| `none`. `none` is never listed. Appointment publishes with this flag (finder: “By appointment. Call to schedule.”). Missing or unknown values do not list. |
 | `notes` | omit | Staging/internal only. The publisher does not copy this field. |
 
-Aliases such as `latitude`, `address`, `zip_code`, and `walk_in_appropriate` are accepted (see `src/data/parse.ts`). CSV with the same headers works if you would rather export a sheet.
+Aliases such as `latitude`, `address`, `zip_code`, `zipcode`, `postcode`, `country`, `clinic`, and `walk_in_appropriate` are accepted (see `src/data/parse.ts`). The sheet header `Can we send people there to Demo?` maps to `demo_consent`. A `Contact` cell is an email when it contains `@`, otherwise a phone when it contains a digit. CSV with the same headers works if you would rather export a sheet. International rows use the same gate: explicit `qualified`, `public_facing`, and `demo_consent`, a listable `visit_model`, and real coordinates. A demo-yes cell alone does not publish the row.
 
 Minimal example:
 

@@ -119,13 +119,17 @@ Optional resize listener. Skip it if the fixed height is enough. Clamp. Check or
 </script>
 ```
 
-**Geolocation.** “Use my location” needs `allow="geolocation"` and HTTPS. If the theme sets a Permissions-Policy, it must allow geolocation for `https://gordonshiftwave.github.io`. The app already explains what to do when permission is denied (`src/App.tsx`). Typed street, city, or ZIP search does not need geolocation.
+**Geolocation.** “Use my location” needs `allow="geolocation"` and HTTPS. If the theme sets a Permissions-Policy, it must allow geolocation for `https://gordonshiftwave.github.io`. The app already explains what to do when permission is denied (`src/App.tsx`). Typed street, city, or postal-code search does not need geolocation.
 
-**Address, directions, and distance.** A visitor can click a result or a map pin to see the address, plus phone and hours when those are listed, and a Directions link. The link opens in a new tab (Google Maps, or Apple Maps on an iPhone) so the iframe stays on the Try page. Pins that share a city point open one popup listing each place. A typed street, city, or ZIP sorts places nearest first and shows miles. No API key. Some listings are still city and ZIP until a street is published. Do not invent one.
+**Address, directions, and distance.** A visitor can click a result or a map pin to see the address, plus phone and hours when those are listed, and a Directions link. The link opens in a new tab (Google Maps, or Apple Maps on an iPhone) so the iframe stays on the Try page. Pins that share a city point open one popup listing each place. A typed street, city, or postal code in any country sorts places nearest first. Distance is miles when that place is in the United States, and kilometers otherwise. No API key. Some listings are still city and postal code until a street is published. Do not invent one.
+
+**Nothing nearby.** If the search is far from every public place, the finder says so in plain English and points to the enquiry form below the finder. It still lists the closest places anywhere. The forms stay on the Try page under the iframe. The finder does not know the form id.
+
+**International places.** The map opens on a world view. Search accepts London `SW1A 1AA`, Toronto `M5V`, Sydney `2000`, Berlin, and other cities and postal codes. The Clinics - Intl. tab is not public yet. See the counts below. A row still has to pass the same qualified, public-facing, demo-consent, and visit-model rules, and it needs real coordinates. Do not add a pin by guessing a street or a map point.
 
 **Microphone.** Voice search stays off in embed mode. The mic button is not rendered when `?embed=1` (or when the app is inside an iframe). Leave `microphone` out of `allow`. Add `microphone` later only if Candice wants voice on the standalone page.
 
-**Loading / failure / empty.** The iframe shows its own notice and tells the visitor to use the request form below the finder. It does not know the form’s id. Do not hide the forms when the list is empty.
+**Loading / failure / empty.** The iframe shows its own notice and tells the visitor to use the enquiry form below the finder. It does not know the form’s id. Do not hide the forms when the list is empty.
 
 **Analytics.** Parent-page pixels keep working for the Shopify page. Searches inside the iframe are cross-origin and are not automatically Shopify events. No tracking IDs were added here.
 
@@ -191,19 +195,41 @@ Until those are copied from the live page, embed the iframe and do not rewrite t
 
 Ran on this branch:
 
-- `npm test` — 33 passing (`node --test scripts/lib/*.test.mjs`), including publish reconcile, notes, coordinates, qualification, browser fail-closed parser, and remote-feed failure.
+- `npm test` — 45 passing (`node --test scripts/lib/*.test.mjs`), including non-US postal codes, miles and kilometers, publish reconcile, notes, coordinates, qualification, browser fail-closed parser, and remote-feed failure.
 - `npx tsc -b` — pass.
 
 CI: pull requests run `.github/workflows/ci.yml` (`npm test`, `npm run build`). Push to `main` also runs tests inside `.github/workflows/deploy-pages.yml` before deploy.
 
 Still for Candice on the live theme, after she pastes the iframe:
 
-- Search by ZIP, city, and street address. Results sort nearest first and show miles. “Use my location” still works when the browser allows it.
+- Search by city, street, and postal code, including a place outside the US (London `SW1A 1AA` is a good check). Results sort nearest first. A US search shows miles. Any other country shows kilometers. “Use my location” still works when the browser allows it.
 - Click a result and a map pin. The address and a Directions link show. Phone and hours show when the listing has them.
 - Appointment pin shows “By appointment. Call to schedule.”
 - The microphone button is absent in `?embed=1`.
-- Empty area shows the closest pins, and the forms below the iframe still submit.
-- Mobile width: the page scrolls to the forms; the iframe does not cover them.
+- A search with nothing nearby shows the enquiry-form sentence and the closest places. The forms below the iframe still submit.
+- Mobile width: the page scrolls to the forms; the iframe does not cover them. The map popup stays inside the map.
+
+### Clinics - Intl. tab (read on 2026-10-20, not edited)
+
+Sheet: `1ArtJQDk8ShmlL2VqDrbhQtvkcDd-lhhaAtWdiIhue_Q`, tab “Clinics - Intl.”
+
+The tab has 22 nonempty rows: 9 country headings and 13 clinic rows. 11 of those clinics are marked yes for “Can we send people there to Demo?”. One is no (Auragens, Panama). One is unknown (Dr. Wayne Lai, Kelowna).
+
+**0 of the 13 would qualify for the public finder today.** The feed will not invent the missing fields.
+
+Missing on every clinic row:
+
+- Street (there is no street column)
+- Postal code (the Zipcode column exists, and every clinic cell is empty)
+- Latitude and longitude (no columns)
+- Hours (no column)
+- `qualified` (no column)
+- `public_facing` (no column)
+- `visit_model` (no column)
+
+Phone is filled only for Formation in Dubai (`971 58 598 8626`). The other contacts are emails, or blank, or `N/A`. Vitology has no city. Several state cells are `N/A`.
+
+When a row is ready, the feed accepts `country`, a postal code that is not a US ZIP, and an international phone. The demo column maps to demo consent. That is not enough on its own. The row still needs an explicit yes for qualified and public facing, a visit model of walk-in or appointment, and real coordinates. Until then these 13 clinics stay off the map.
 
 ## 7. Human decisions only
 

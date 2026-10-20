@@ -241,7 +241,9 @@ describe('address, directions, and distance', () => {
       assert.equal(urls.some((href) => href.includes('nominatim')), true)
       assert.equal(urls.some((href) => href.includes('photon')), true)
       assert.equal(street.kind, 'city')
-      assert.match(street.label, /Austin/)
+      assert.match(street.label, /Zurich/)
+      assert.equal(street.countryCode, 'CH')
+      assert.equal(urls.some((href) => href.includes('countrycodes=us')), false)
 
       urls.length = 0
       globalThis.fetch = async () => {
@@ -272,8 +274,179 @@ describe('visitor copy stays plain', () => {
     }
     for (const note of Object.values(speech.speechVisitorNotes)) assertPlain(note)
     assertPlain(visitor.placesNearLabel(1, 'Phoenix, AZ'))
-    assertPlain(visitor.noneWithinLabel(50, 'Austin, TX'))
-    assertPlain(visitor.nothingNearbyBody(50, 'Austin, TX'))
+    assertPlain(visitor.noneWithinLabel(50, 'London', 'km'))
+    assertPlain(visitor.nothingNearbyBody(50, 'London', 'km'))
+    assert.match(visitor.nothingNearbyBody(50, 'London', 'km'), /enquiry form below this finder/)
+    assert.match(visitor.nothingNearbyBody(50, 'London', 'km'), /kilometers/)
+    assert.match(visitor.noneWithinLabel(25, 'Phoenix, AZ', 'mi'), /miles/)
+  })
+})
+
+describe('worldwide search and units', () => {
+  it('uses miles only for a US place and kilometers everywhere else', () => {
+    assert.equal(distance.distanceUnit('US'), 'mi')
+    assert.equal(distance.distanceUnit('us'), 'mi')
+    assert.equal(distance.distanceUnit('GB'), 'km')
+    assert.equal(distance.distanceUnit(undefined), 'km')
+    assert.ok(Math.abs(distance.radiusInMiles(50, 'km') - 50 / 1.609344) < 1e-9)
+    assert.equal(distance.radiusInMiles(50, 'mi'), 50)
+    assert.match(distance.formatDistance(31, 'km'), /km$/)
+    assert.match(distance.formatDistance(31, 'mi'), /mi$/)
+  })
+
+  it('geocodes postal codes outside the United States', async () => {
+    assert.equal(geocode.isZipQuery('SW1A 1AA'), false)
+    assert.equal(geocode.isZipQuery('M5V'), false)
+    assert.equal(geocode.isZipQuery('2000'), false)
+    assert.equal(geocode.isZipQuery('10115'), true)
+
+    const original = globalThis.fetch
+    try {
+      const urls = []
+      globalThis.fetch = async (url) => {
+        const href = String(url)
+        urls.push(href)
+        if (href.includes('zippopotam')) return new Response('no', { status: 404 })
+        if (href.includes('nominatim') && href.includes('SW1A')) {
+          return new Response(
+            JSON.stringify([
+              {
+                lat: '51.501',
+                lon: '-0.141',
+                display_name: 'Westminster, London, SW1A 1AA, United Kingdom',
+                addresstype: 'postcode',
+                type: 'postcode',
+                address: {
+                  city: 'London',
+                  postcode: 'SW1A 1AA',
+                  country: 'United Kingdom',
+                  country_code: 'gb',
+                },
+              },
+            ]),
+            { status: 200 },
+          )
+        }
+        if (href.includes('nominatim') && href.includes('10115')) {
+          return new Response(
+            JSON.stringify([
+              {
+                lat: '52.532',
+                lon: '13.384',
+                display_name: 'Berlin, 10115, Germany',
+                addresstype: 'postcode',
+                type: 'postcode',
+                address: {
+                  city: 'Berlin',
+                  postcode: '10115',
+                  country: 'Germany',
+                  country_code: 'de',
+                },
+              },
+            ]),
+            { status: 200 },
+          )
+        }
+        return new Response('no', { status: 404 })
+      }
+
+      const london = await geocode.geocodeQuery('SW1A 1AA')
+      assert.equal(urls.some((href) => href.includes('zippopotam')), false)
+      assert.equal(urls.some((href) => href.includes('countrycodes=us')), false)
+      assert.equal(london.countryCode, 'GB')
+      assert.match(london.label, /London/)
+      assert.match(london.label, /SW1A 1AA/)
+      assert.match(london.label, /United Kingdom/)
+      assert.match(distance.formatDistance(12, distance.distanceUnit(london.countryCode)), /km$/)
+
+      urls.length = 0
+      const berlin = await geocode.geocodeQuery('10115')
+      assert.equal(urls.some((href) => href.includes('zippopotam')), true)
+      assert.equal(urls.filter((href) => href.includes('nominatim')).length, 1)
+      assert.equal(berlin.countryCode, 'DE')
+      assert.match(berlin.label, /Berlin/)
+      assert.equal(distance.distanceUnit(berlin.countryCode), 'km')
+    } finally {
+      globalThis.fetch = original
+    }
+  })
+
+  it('reads international rows and still requires the public gate', () => {
+    const london = parse.parseRow(
+      {
+        Clinic: 'Example London',
+        City: 'London',
+        State: 'N/A',
+        Zipcode: 'SW1A 1AA',
+        Country: 'United Kingdom',
+        Contact: '+44 20 7946 0958',
+        lat: 51.501,
+        lng: -0.141,
+        qualified: true,
+        public_facing: true,
+        demo_consent: true,
+        visit_model: 'appointment',
+      },
+      9,
+    )
+    assert.equal(london.phone, '+44 20 7946 0958')
+    assert.equal(london.zip, 'SW1A 1AA')
+    assert.equal(london.state, '')
+    assert.equal(london.country, 'United Kingdom')
+    assert.equal(parse.formatAddress(london), 'London SW1A 1AA, United Kingdom')
+    assert.equal(parse.isPublicQualified(london), true)
+    assert.match(directions.directionsHref(london, { apple: false }), /United\+Kingdom/)
+
+    const dubai = parse.parseRow(
+      {
+        name: 'Formation',
+        city: 'Dubai',
+        state: 'N/A',
+        country: 'United Arab Emirates',
+        contact: '971 58 598 8626',
+        lat: 25.2,
+        lng: 55.27,
+        qualified: true,
+        public_facing: true,
+        demo_consent: true,
+        visit_model: 'walk_in',
+      },
+      10,
+    )
+    assert.equal(dubai.phone, '971 58 598 8626')
+    assert.equal(parse.isPublicQualified(dubai), true)
+
+    const emailOnly = parse.parseRow(
+      {
+        name: 'Glow',
+        city: 'Lisbon',
+        country: 'Portugal',
+        contact: 'hello@example.pt',
+        lat: 38.72,
+        lng: -9.14,
+        'Can we send people there to Demo?': 'YES',
+      },
+      11,
+    )
+    assert.equal(emailOnly.email, 'hello@example.pt')
+    assert.equal(emailOnly.phone, '')
+    assert.equal(emailOnly.demoConsent, true)
+    assert.equal(emailOnly.qualified, false)
+    assert.equal(emailOnly.publicFacing, false)
+    assert.equal(emailOnly.visitModel, 'none')
+    assert.equal(parse.isPublicQualified(emailOnly), false)
+
+    assert.equal(
+      parse.parseRow(
+        {
+          Clinic: 'No coords',
+          Country: 'France',
+          'Can we send people there to Demo?': 'YES',
+        },
+        12,
+      ),
+      null,
+    )
   })
 })
 

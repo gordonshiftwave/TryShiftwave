@@ -40,6 +40,7 @@ const HUMAN_FIELDS = [
   'city',
   'state',
   'zip',
+  'country',
   'phone',
   'email',
 ]
@@ -169,9 +170,12 @@ export function slug(value) {
 
 function normalizeZip(value) {
   const s = String(value ?? '').trim()
-  if (!/\d/.test(s)) return ''
+  if (!s || /^(n\/a|na|none|unknown|-)$/i.test(s)) return ''
+  if (/[a-z]/i.test(s)) return s
   const digits = s.replace(/\D/g, '')
-  if (digits.length >= 5) return digits.slice(0, 5)
+  if (digits.length === 5) return digits
+  if (digits.length === 9) return `${digits.slice(0, 5)}-${digits.slice(5)}`
+  if (!digits) return ''
   return s
 }
 
@@ -209,6 +213,9 @@ function csvRowToNormalized(raw) {
       cell(raw, 'Shipping Province Name', 'shipping_province_name') ||
       cell(raw, 'Billing Province Name', 'billing_province_name'),
     zip: cell(raw, 'Shipping Zip', 'shipping_zip') || cell(raw, 'Billing Zip', 'billing_zip'),
+    country:
+      cell(raw, 'Shipping Country', 'shipping_country') ||
+      cell(raw, 'Billing Country', 'billing_country'),
   }
 }
 
@@ -255,6 +262,11 @@ export function graphqlOrderToNormalized(node) {
       String(shipping.province ?? '').trim() ||
       String(billing.province ?? '').trim(),
     zip: String(shipping.zip ?? '').trim() || String(billing.zip ?? '').trim(),
+    country:
+      String(shipping.countryCodeV2 ?? '').trim() ||
+      String(billing.countryCodeV2 ?? '').trim() ||
+      String(shipping.country ?? '').trim() ||
+      String(billing.country ?? '').trim(),
   }
 }
 
@@ -291,6 +303,7 @@ export function normalizedOrdersToStagingRows(orders) {
     const city = String(order.city ?? '').trim()
     const state = String(order.state ?? '').trim()
     const zip = normalizeZip(order.zip)
+    const country = String(order.country ?? '').trim()
     const excluded = hasTag(tags, EXCLUDE_TAG)
     const id = slug([name, city, state, zip].filter(Boolean).join(' ')) || slug(`shopify-${key}`)
 
@@ -301,6 +314,7 @@ export function normalizedOrdersToStagingRows(orders) {
       city,
       state,
       zip,
+      country,
       lat: null,
       lng: null,
       phone: String(order.phone ?? '').trim(),
@@ -485,6 +499,7 @@ const PUBLIC_LOCATION_KEYS = [
   'city',
   'state',
   'zip',
+  'country',
   'lat',
   'lng',
   'phone',
@@ -521,6 +536,7 @@ export function toPublicLocation(row) {
     city: String(row.city ?? '').trim(),
     state: String(row.state ?? '').trim(),
     zip: String(row.zip ?? '').trim(),
+    ...(String(row.country ?? '').trim() ? { country: String(row.country ?? '').trim() } : {}),
     lat: coords.lat,
     lng: coords.lng,
     phone: String(row.phone ?? '').trim(),
