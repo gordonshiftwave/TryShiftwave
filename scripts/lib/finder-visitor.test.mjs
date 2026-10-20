@@ -13,6 +13,8 @@ let visitor
 let types
 let speech
 let popupFit
+let nearby
+let locate
 
 const bannedPunctuation = /[\u2014\u2013\u2026\u2018\u2019\u201C\u201D]/
 
@@ -33,6 +35,8 @@ before(async () => {
   types = await server.ssrLoadModule('/src/types.ts')
   speech = await server.ssrLoadModule('/src/speech/usePushToTalk.ts')
   popupFit = await server.ssrLoadModule('/src/geo/popupFit.ts')
+  nearby = await server.ssrLoadModule('/src/geo/nearby.ts')
+  locate = await server.ssrLoadModule('/src/geo/locate.ts')
 })
 
 after(async () => {
@@ -51,6 +55,37 @@ const listed = {
   public_facing: true,
   demo_consent: true,
   visit_model: 'walk_in',
+}
+
+function placeRow(id, state, city, distanceMiles) {
+  return {
+    id,
+    name: city,
+    street: '',
+    city,
+    state,
+    zip: '',
+    country: '',
+    lat: 0,
+    lng: 0,
+    distanceMiles,
+  }
+}
+
+function hit(lat, lon, postcode, city, country, countryCode, cityKey = 'city') {
+  return {
+    lat,
+    lon,
+    display_name: `${postcode}, ${city}, ${country}`,
+    addresstype: 'postcode',
+    type: 'postcode',
+    address: {
+      postcode,
+      [cityKey]: city,
+      country,
+      country_code: countryCode,
+    },
+  }
 }
 
 function assertPlain(value) {
@@ -371,6 +406,96 @@ describe('worldwide search and units', () => {
     }
   })
 
+  it('asks which country a shared numeric code belongs to, and keeps a real US ZIP', async () => {
+    const original = globalThis.fetch
+    try {
+      const urls = []
+      globalThis.fetch = async (url) => {
+        const href = String(url)
+        urls.push(href)
+        const asked = (() => {
+          try {
+            return new URL(href).searchParams.get('q') ?? ''
+          } catch {
+            return ''
+          }
+        })()
+        if (href.includes('zippopotam') && href.endsWith('/10115')) {
+          return new Response(
+            JSON.stringify({
+              places: [
+                {
+                  'place name': 'New York City',
+                  state: 'New York',
+                  'state abbreviation': 'NY',
+                  latitude: '40.77',
+                  longitude: '-73.96',
+                },
+              ],
+            }),
+            { status: 200 },
+          )
+        }
+        if (href.includes('zippopotam')) return new Response('no', { status: 404 })
+        if (href.includes('nominatim') && asked === '2000') {
+          return new Response(
+            JSON.stringify([
+              hit('41.3', '19.4', '2000', 'Durrës', 'Albania', 'al'),
+              hit('-33.87', '151.21', '2000', 'Sydney', 'Australia', 'au'),
+              hit('-33.88', '151.22', '2000', 'Sydney', 'Australia', 'au'),
+            ]),
+            { status: 200 },
+          )
+        }
+        if (href.includes('nominatim') && asked === '01000') {
+          return new Response(
+            JSON.stringify([
+              hit('27.9', '-0.3', '01000', 'Ouled Ahmed Tammi', 'Algeria', 'dz', 'village'),
+              hit('19.43', '-99.13', '01000', 'Mexico City', 'Mexico', 'mx'),
+            ]),
+            { status: 200 },
+          )
+        }
+        if (href.includes('nominatim') && asked === '3000') {
+          return new Response(
+            JSON.stringify([hit('-37.81', '144.96', '3000', 'Melbourne', 'Australia', 'au')]),
+            { status: 200 },
+          )
+        }
+        return new Response('no', { status: 404 })
+      }
+
+      urls.length = 0
+      const nyc = await geocode.geocodeSearch('10115')
+      assert.equal(nyc.type, 'place')
+      assert.equal(nyc.place.countryCode, 'US')
+      assert.match(nyc.place.label, /New York City, NY 10115/)
+      assert.equal(urls.some((href) => href.includes('nominatim')), false)
+
+      const shared = await geocode.geocodeSearch('2000')
+      assert.equal(shared.type, 'choices')
+      assert.equal(shared.choices.filter((row) => row.countryCode === 'AU').length, 1)
+      assert.match(shared.choices.find((row) => row.countryCode === 'AU').label, /Sydney/)
+      assert.match(shared.choices.find((row) => row.countryCode === 'AL').label, /Albania/)
+      assert.equal(await geocode.geocodeQuery('2000'), null)
+
+      const mexico = await geocode.geocodeSearch('01000')
+      assert.equal(mexico.type, 'choices')
+      assert.equal(mexico.choices.some((row) => row.countryCode === 'MX'), true)
+
+      const only = await geocode.geocodeSearch('3000')
+      assert.equal(only.type, 'place')
+      assert.equal(only.place.countryCode, 'AU')
+      assert.match(only.place.label, /Melbourne/)
+
+      assert.match(visitor.visitorCopy.codeChoices('2000'), /Pick a place/)
+      assertPlain(visitor.visitorCopy.codeChoices('2000'))
+      assertPlain(visitor.visitorCopy.regionDistances)
+    } finally {
+      globalThis.fetch = original
+    }
+  })
+
   it('reads international rows and still requires the public gate', () => {
     const london = parse.parseRow(
       {
@@ -435,6 +560,54 @@ describe('worldwide search and units', () => {
     assert.equal(emailOnly.publicFacing, false)
     assert.equal(emailOnly.visitModel, 'none')
     assert.equal(parse.isPublicQualified(emailOnly), false)
+
+    assert.equal(locate.currentPositionOptions.maximumAge, 0)
+
+    const texas = {
+      lat: 31.97,
+      lng: -99.9,
+      label: 'Texas',
+      kind: 'state',
+      state: 'Texas',
+      countryCode: 'US',
+    }
+    const ranked = [
+      placeRow('near', 'TX', 'Abilene', 40),
+      placeRow('far', 'TX', 'Houston', 200),
+      placeRow('other', 'OK', 'Tulsa', 30),
+    ]
+    const wide = nearby.selectPlaces(texas, ranked, 50)
+    assert.equal(wide.regionWide, true)
+    assert.deepEqual(
+      wide.places.map((row) => row.id),
+      ['near', 'far'],
+    )
+    const city = nearby.selectPlaces({ ...texas, kind: 'city', state: 'TX', label: 'Abilene, TX' }, ranked, 50)
+    assert.equal(city.regionWide, false)
+    assert.deepEqual(
+      city.places.map((row) => row.id),
+      ['near', 'other'],
+    )
+    const usa = nearby.selectPlaces(
+      { ...texas, kind: 'country', state: undefined, country: 'United States', countryCode: 'US', label: 'United States' },
+      ranked,
+      25,
+    )
+    assert.equal(usa.regionWide, true)
+    assert.deepEqual(
+      usa.places.map((row) => row.id),
+      ['near', 'far', 'other'],
+    )
+    const france = nearby.selectPlaces(
+      { lat: 46.2, lng: 2.2, label: 'France', kind: 'country', country: 'France', countryCode: 'FR' },
+      ranked,
+      50,
+    )
+    assert.equal(france.regionWide, false)
+    assert.deepEqual(
+      france.places.map((row) => row.id),
+      ['near', 'other'],
+    )
 
     assert.equal(
       parse.parseRow(

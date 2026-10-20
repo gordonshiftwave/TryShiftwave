@@ -12,8 +12,6 @@ import {
 } from './copy/visitor'
 import { feedVisitorMessage } from './data/feedCopy'
 import { loadLocations, type FeedStatus } from './data/load'
-import { formatAddress } from './data/parse'
-import { sameCountry } from './geo/country'
 import {
   distanceUnit,
   prefersReducedMotion,
@@ -21,8 +19,9 @@ import {
   rankByDistance,
   type DistanceUnit,
 } from './geo/distance'
-import { geocodeQuery, reverseGeocode } from './geo/geocode'
-import { statesMatch } from './geo/states'
+import { geocodeSearch, reverseGeocode } from './geo/geocode'
+import { currentPositionOptions } from './geo/locate'
+import { selectPlaces } from './geo/nearby'
 import { readEmbedMode } from './embed'
 import {
   DEFAULT_RADIUS_MILES,
@@ -43,6 +42,8 @@ export function App() {
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [origin, setOrigin] = useState<GeocodeResult | null>(null)
+  const [choices, setChoices] = useState<GeocodeResult[] | null>(null)
+  const [choiceQuery, setChoiceQuery] = useState('')
   const [radius, setRadius] = useState(DEFAULT_RADIUS_MILES)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [popupId, setPopupId] = useState<string | null>(null)
@@ -50,6 +51,14 @@ export function App() {
   const [focus, setFocus] = useState<MapFocus>({ type: 'world' })
   const [geoNote, setGeoNote] = useState<string | null>(null)
   const searchSeq = useRef(0)
+  const locateSeq = useRef(0)
+  const originKey = origin ? `${origin.lat.toFixed(4)},${origin.lng.toFixed(4)},${origin.label}` : ''
+  const [seenOrigin, setSeenOrigin] = useState(originKey)
+  if (originKey !== seenOrigin) {
+    setSeenOrigin(originKey)
+    setSelectedId(null)
+    setPopupId(null)
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -89,10 +98,12 @@ export function App() {
   const unit: DistanceUnit = origin ? distanceUnit(origin.countryCode) : 'mi'
   const radiusMiles = radiusInMiles(radius, unit)
 
-  const nearby = useMemo(() => {
-    if (!origin) return []
-    return placesWithin(origin, ranked, radiusMiles)
+  const selection = useMemo(() => {
+    if (!origin) return { places: [] as RankedLocation[], regionWide: false }
+    return selectPlaces(origin, ranked, radiusMiles)
   }, [origin, ranked, radiusMiles])
+  const nearby = selection.places
+  const regionWide = selection.regionWide
 
   const closestFallback = ranked.slice(0, 3)
   const emptyNearby = Boolean(origin) && nearby.length === 0 && placesReady && places.length > 0
@@ -110,7 +121,7 @@ export function App() {
       setSelectedId(null)
       return
     }
-    const matches = placesWithin(origin, ranked, radiusMiles)
+    const matches = selectPlaces(origin, ranked, radiusMiles).places
     const pool = matches.length ? matches : ranked.slice(0, 3)
     setFocus({
       type: 'fit',
@@ -149,23 +160,43 @@ export function App() {
     const q = text.trim()
     if (!q) return
     const seq = ++searchSeq.current
+    locateSeq.current += 1
     setStatus('searching')
     setError(null)
     setGeoNote(null)
-    const result = await geocodeQuery(q)
+    const found = await geocodeSearch(q)
     if (seq !== searchSeq.current) return
     setStatus('ready')
-    if (!result) {
+    if (!found) {
+      setChoices(null)
       setError(visitorCopy.searchMiss)
       return
     }
-    applyOrigin(result)
+    if (found.type === 'choices') {
+      setChoices(found.choices)
+      setChoiceQuery(found.query)
+      setOrigin(null)
+      setSelectedId(null)
+      setPopupId(null)
+      setError(null)
+      return
+    }
+    setChoices(null)
+    applyOrigin(found.place)
   }
 
   function applyOrigin(result: GeocodeResult) {
+    setChoices(null)
     setPopupId(null)
     setOrigin(result)
     setQuery(result.label)
+  }
+
+  function pickChoice(place: GeocodeResult) {
+    searchSeq.current += 1
+    locateSeq.current += 1
+    setStatus('ready')
+    applyOrigin(place)
   }
 
   async function useMyLocation() {
@@ -179,11 +210,15 @@ export function App() {
       setGeoNote(visitorCopy.geoInsecure)
       return
     }
+    const seq = ++locateSeq.current
+    searchSeq.current += 1
     setStatus('locating')
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
+        if (seq !== locateSeq.current) return
         const { latitude: lat, longitude: lng } = pos.coords
         const place = await reverseGeocode(lat, lng)
+        if (seq !== locateSeq.current) return
         setStatus('ready')
         applyOrigin({
           lat,
@@ -194,6 +229,7 @@ export function App() {
         })
       },
       (err) => {
+        if (seq !== locateSeq.current) return
         setStatus('ready')
         if (err.code === err.PERMISSION_DENIED) {
           setGeoNote(visitorCopy.geoDenied)
@@ -203,7 +239,7 @@ export function App() {
           setGeoNote(visitorCopy.geoFailed)
         }
       },
-      { enableHighAccuracy: false, timeout: 8000, maximumAge: 120000 },
+      currentPositionOptions,
     )
   }
 
@@ -217,11 +253,14 @@ export function App() {
 
   function resetView() {
     searchSeq.current += 1
+    locateSeq.current += 1
     setOrigin(null)
     setSelectedId(null)
     setPopupId(null)
     setError(null)
     setGeoNote(null)
+    setChoices(null)
+    setChoiceQuery('')
     setQuery('')
     setFocus({ type: 'world' })
     setStatus((current) => (current === 'searching' || current === 'locating' ? 'ready' : current))
@@ -261,6 +300,7 @@ export function App() {
           resultLabel={!placesReady ? visitorCopy.loadingPlaces : resultLabel}
           radius={radius}
           unit={unit}
+          regionWide={regionWide}
           onRadius={setRadius}
           feedStatus={feedStatus}
           noQualified={placesReady && feedStatus === 'ok' && places.length === 0}
@@ -288,6 +328,9 @@ export function App() {
           locating={status === 'locating'}
           error={error}
           geoNote={geoNote}
+          choices={choices}
+          choiceQuery={choiceQuery}
+          onPickChoice={pickChoice}
           feedStatus={feedStatus}
         />
       )}
@@ -316,6 +359,9 @@ type LandingViewProps = {
   locating: boolean
   error: string | null
   geoNote: string | null
+  choices: GeocodeResult[] | null
+  choiceQuery: string
+  onPickChoice: (place: GeocodeResult) => void
   feedStatus: FeedStatus | 'loading'
 }
 
@@ -331,6 +377,9 @@ function LandingView({
   locating,
   error,
   geoNote,
+  choices,
+  choiceQuery,
+  onPickChoice,
   feedStatus,
 }: LandingViewProps) {
   return (
@@ -365,6 +414,10 @@ function LandingView({
           />
         </div>
 
+        {choices && choices.length > 0 && (
+          <ChoiceList query={choiceQuery} choices={choices} onPick={onPickChoice} />
+        )}
+
         {(error || geoNote || feedVisitorMessage(feedStatus)) && (
           <p className="mt-5 max-w-md text-sm text-ink-soft" role="status">
             {error || geoNote || feedVisitorMessage(feedStatus)}
@@ -394,6 +447,7 @@ type ResultsViewProps = {
   resultLabel: string
   radius: number
   unit: DistanceUnit
+  regionWide: boolean
   onRadius: (miles: number) => void
   feedStatus: FeedStatus | 'loading'
   noQualified: boolean
@@ -425,6 +479,7 @@ function ResultsView({
   resultLabel,
   radius,
   unit,
+  regionWide,
   onRadius,
   feedStatus,
   noQualified,
@@ -486,20 +541,24 @@ function ResultsView({
             <h2 className="font-display text-[1.45rem] font-semibold leading-[1.3] tracking-normal text-ink sm:text-[1.7rem]">
               {resultLabel}
             </h2>
-            <div className="mt-3 flex flex-wrap items-center gap-1.5">
-              <span className="mr-1 text-sm text-ink-soft">Within</span>
-              {NEARBY_RADIUS_OPTIONS.map((miles) => (
-                <button
-                  key={miles}
-                  type="button"
-                  className="radius-chip focus-ring"
-                  onClick={() => onRadius(miles)}
-                  aria-pressed={radius === miles}
-                >
-                  {miles} {unit}
-                </button>
-              ))}
-            </div>
+            {regionWide ? (
+              <p className="mt-3 text-sm text-ink-soft">{visitorCopy.regionDistances}</p>
+            ) : (
+              <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                <span className="mr-1 text-sm text-ink-soft">Within</span>
+                {NEARBY_RADIUS_OPTIONS.map((miles) => (
+                  <button
+                    key={miles}
+                    type="button"
+                    className="radius-chip focus-ring"
+                    onClick={() => onRadius(miles)}
+                    aria-pressed={radius === miles}
+                  >
+                    {miles} {unit}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {(error || geoNote) && (
@@ -601,29 +660,32 @@ function OsmCredit({ className = '' }: { className?: string }) {
   )
 }
 
-function matchesState(place: LocationRecord, state?: string): boolean {
-  if (!state) return false
-  if (statesMatch(place.state, state)) return true
-  return formatAddress(place).toLowerCase().includes(state.trim().toLowerCase())
-}
-
-/** State or country when any place matches. Otherwise the radius, in miles internally. */
-function placesWithin(
-  origin: GeocodeResult,
-  ranked: RankedLocation[],
-  radiusMiles: number,
-): RankedLocation[] {
-  if (origin.kind === 'state' && origin.state) {
-    const inState = ranked.filter((place) => matchesState(place, origin.state))
-    if (inState.length) return inState
-  }
-  if (origin.kind === 'country') {
-    const inCountry = ranked.filter((place) =>
-      sameCountry(place.country, origin.countryCode, origin.country),
-    )
-    if (inCountry.length) return inCountry
-  }
-  return ranked.filter(
-    (place) => place.distanceMiles != null && place.distanceMiles <= radiusMiles,
+function ChoiceList({
+  query,
+  choices,
+  onPick,
+}: {
+  query: string
+  choices: GeocodeResult[]
+  onPick: (place: GeocodeResult) => void
+}) {
+  return (
+    <div className="mt-5 w-full max-w-full text-left" role="group" aria-labelledby="code-choices-label">
+      <p id="code-choices-label" className="text-sm text-ink-soft" role="status">
+        {visitorCopy.codeChoices(query)}
+      </p>
+      <div className="mt-3 flex max-h-64 max-w-full flex-wrap gap-1.5 overflow-y-auto">
+        {choices.map((place) => (
+          <button
+            key={`${place.countryCode ?? place.country}-${place.lat}-${place.lng}`}
+            type="button"
+            className="radius-chip focus-ring max-w-full whitespace-normal text-left"
+            onClick={() => onPick(place)}
+          >
+            {place.label}
+          </button>
+        ))}
+      </div>
+    </div>
   )
 }

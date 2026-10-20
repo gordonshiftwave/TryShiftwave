@@ -37,7 +37,7 @@ npm run preview
 
 `npm run build` writes a static site to `dist/` (Vite + React + TypeScript). Asset URLs follow Vite `base`: `/TryShiftwave/` unless `VITE_BASE` is set. `npm run preview` serves that build at [http://localhost:4173/TryShiftwave/](http://localhost:4173/TryShiftwave/) with the default Pages base. No Mapbox/Google Maps API key is required: the map uses [MapLibre GL](https://maplibre.org/) with [OpenFreeMap](https://openfreemap.org/) vector tiles. MapLibre’s worker and `public/` files (`locations.json`, `us-states.json`, favicon) are resolved under that base path.
 
-Geocoding uses Zippopotam.us for a bare US ZIP, then OpenStreetMap Nominatim and Photon for any city, street, or postal code. There is no country limit and no API key. Please keep OSM attribution visible (MapLibre adds it). Search runs only when the visitor submits, at most about one Nominatim request per second.
+Geocoding uses Zippopotam.us for a bare US ZIP, then OpenStreetMap Nominatim and Photon for any city, street, or postal code. There is no country limit and no API key. Please keep OSM attribution visible (MapLibre adds it). Search runs only when the visitor submits, at most about one Nominatim request per second. A real US ZIP stays in the United States. Any other 4-digit or 5-digit code that more than one country uses asks the visitor to pick a place. A whole state or country lists every public place in that area, with distances from the center, and hides the 25, 50, and 100 controls.
 
 ## Product behavior
 

@@ -5,8 +5,10 @@ const ZIP_RE = /^\d{5}(?:-\d{4})?$/
 /**
  * Nominatim asks for at most one request per second and no autocomplete.
  * Search runs only when someone submits the field, and these calls wait
- * their turn. A bare US ZIP tries Zippopotam first. Any other city, street,
- * or postal code goes to Nominatim, then Photon, with no country limit.
+ * their turn. A bare US ZIP tries Zippopotam first and stays in the United
+ * States. A 4-digit or other 5-digit code that matches more than one country
+ * comes back as a choice list. Any other city, street, or postal code goes
+ * to Nominatim, then Photon, with no country limit.
  */
 export const NOMINATIM_GAP_MS = 1100
 
@@ -29,16 +31,48 @@ export function isZipQuery(input: string): boolean {
   return ZIP_RE.test(input.trim())
 }
 
-export async function geocodeQuery(input: string): Promise<GeocodeResult | null> {
+/** 4-digit and 5-digit codes are postcodes in many countries, not only US ZIPs. */
+export function isBareNumericPostal(input: string): boolean {
+  return /^\d{4,5}$/.test(input.trim())
+}
+
+export type GeocodeSearchResult =
+  | { type: 'place'; place: GeocodeResult }
+  | { type: 'choices'; query: string; choices: GeocodeResult[] }
+
+/**
+ * A confirmed US ZIP stays a US place. Any other bare numeric code that
+ * matches more than one country asks the visitor to pick, instead of
+ * silently using the first hit.
+ */
+export async function geocodeSearch(input: string): Promise<GeocodeSearchResult | null> {
   const q = input.trim()
   if (!q) return null
 
   if (isZipQuery(q)) {
     const fromZip = await geocodeZip(q.slice(0, 5))
-    if (fromZip) return fromZip
+    if (fromZip) return { type: 'place', place: fromZip }
   }
 
-  return (await geocodeNominatim(q)) ?? (await geocodePhoton(q))
+  if (isBareNumericPostal(q)) {
+    const hits = await nominatimHits(q, 20)
+    if (hits) {
+      const choices = distinctPostcodePlaces(hits, q)
+      if (choices.length > 1) return { type: 'choices', query: q, choices }
+      if (choices.length === 1) return { type: 'place', place: choices[0] }
+    }
+    const photon = await geocodePhoton(q)
+    return photon ? { type: 'place', place: photon } : null
+  }
+
+  const one = (await geocodeNominatim(q)) ?? (await geocodePhoton(q))
+  return one ? { type: 'place', place: one } : null
+}
+
+export async function geocodeQuery(input: string): Promise<GeocodeResult | null> {
+  const found = await geocodeSearch(input)
+  if (!found || found.type === 'choices') return null
+  return found.place
 }
 
 export async function reverseGeocode(
@@ -121,12 +155,19 @@ async function geocodeZip(zip: string): Promise<GeocodeResult | null> {
 }
 
 async function geocodeNominatim(q: string): Promise<GeocodeResult | null> {
+  const rows = await nominatimHits(q, 1)
+  const hit = rows?.[0]
+  if (!hit) return null
+  return fromNominatim(hit, q)
+}
+
+async function nominatimHits(q: string, limit: number): Promise<NominatimHit[] | null> {
   try {
     await pace(NOMINATIM_GAP_MS, nominatimPace)
     const url = new URL('https://nominatim.openstreetmap.org/search')
     url.searchParams.set('format', 'jsonv2')
     url.searchParams.set('q', q)
-    url.searchParams.set('limit', '1')
+    url.searchParams.set('limit', String(limit))
     url.searchParams.set('addressdetails', '1')
     const res = await fetch(url, {
       headers: nominatimHeaders(),
@@ -134,12 +175,31 @@ async function geocodeNominatim(q: string): Promise<GeocodeResult | null> {
     })
     if (!res.ok) return null
     const rows = (await res.json()) as NominatimHit[]
-    const hit = rows[0]
-    if (!hit) return null
-    return fromNominatim(hit, q)
+    return Array.isArray(rows) ? rows : null
   } catch {
     return null
   }
+}
+
+function postcodeMatches(hit: NominatimHit, query: string): boolean {
+  const raw = hit.address?.postcode?.trim().toLowerCase() ?? ''
+  if (!raw) return false
+  const compact = (value: string) => value.replace(/[\s-]/g, '')
+  return compact(raw) === compact(query.trim().toLowerCase())
+}
+
+function distinctPostcodePlaces(hits: NominatimHit[], query: string): GeocodeResult[] {
+  const seen = new Set<string>()
+  const places: GeocodeResult[] = []
+  for (const hit of hits) {
+    if (!postcodeMatches(hit, query)) continue
+    const place = fromNominatim(hit, query)
+    const key = (place.countryCode || place.country || '').trim().toUpperCase()
+    if (!key || seen.has(key)) continue
+    seen.add(key)
+    places.push(place)
+  }
+  return places
 }
 
 async function geocodePhoton(q: string): Promise<GeocodeResult | null> {
