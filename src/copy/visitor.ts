@@ -21,6 +21,8 @@ export const visitorCopy = {
   listFailedTitle: "The list didn't load",
   listUnreadableTitle: "The list couldn't be read",
   closestHeading: 'Closest places',
+  regionDistances: 'Distances are from the center of this area.',
+  codeChoices: (code: string) => `${code} is used in more than one country. Pick a place.`,
   noPlacesBody:
     'There are no public places to try Shiftwave right now. Use the enquiry form below this finder.',
   banner:

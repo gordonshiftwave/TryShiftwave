@@ -125,7 +125,7 @@ Optional resize listener. Skip it if the fixed height is enough. Clamp. Check or
 
 **Nothing nearby.** If the search is far from every public place, the finder says so in plain English and points to the enquiry form below the finder. It still lists the closest places anywhere. The forms stay on the Try page under the iframe. The finder does not know the form id.
 
-**International places.** The map opens on a world view. Search accepts London `SW1A 1AA`, Toronto `M5V`, Sydney `2000`, Berlin, and other cities and postal codes. The Clinics - Intl. tab is not public yet. See the counts below. A row still has to pass the same qualified, public-facing, demo-consent, and visit-model rules, and it needs real coordinates. Do not add a pin by guessing a street or a map point.
+**International places.** The map opens on a world view. Search accepts London `SW1A 1AA`, Toronto `M5V`, Sydney `2000`, Berlin, and other cities and postal codes. A number that is a real US ZIP stays in the United States, so `10115` is New York. Search `Berlin 10115` for the German code. A 4-digit or unmatched 5-digit code that several countries share, such as `2000` or `01000`, asks the visitor to pick a place instead of guessing. Searching a whole state or country lists every public place there. The mile and kilometer chips stay hidden, and the page says distances are from the center of that area. Use my location takes a fresh reading on each tap. The Clinics - Intl. tab is not public yet. See the counts below. A row still has to pass the same qualified, public-facing, demo-consent, and visit-model rules, and it needs real coordinates. Do not add a pin by guessing a street or a map point.
 
 **Microphone.** Voice search stays off in embed mode. The mic button is not rendered when `?embed=1` (or when the app is inside an iframe). Leave `microphone` out of `allow`. Add `microphone` later only if Candice wants voice on the standalone page.
 
@@ -195,7 +195,7 @@ Until those are copied from the live page, embed the iframe and do not rewrite t
 
 Ran on this branch:
 
-- `npm test` — 45 passing (`node --test scripts/lib/*.test.mjs`), including non-US postal codes, miles and kilometers, publish reconcile, notes, coordinates, qualification, browser fail-closed parser, and remote-feed failure.
+- `npm test` — 46 passing (`node --test scripts/lib/*.test.mjs`), including non-US postal codes, shared numeric codes, miles and kilometers, publish reconcile, notes, coordinates, qualification, browser fail-closed parser, and remote-feed failure.
 - `npx tsc -b` — pass.
 
 CI: pull requests run `.github/workflows/ci.yml` (`npm test`, `npm run build`). Push to `main` also runs tests inside `.github/workflows/deploy-pages.yml` before deploy.

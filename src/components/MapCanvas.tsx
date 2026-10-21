@@ -203,53 +203,13 @@ export function MapCanvas({
       groupByCoordinate(locations).find((rows) => rows.some((row) => row.id === popupId)) ?? [place]
     const container = document.createElement('div')
     const root: Root = createRoot(container)
-    flushSync(() => {
-      root.render(
-        <div className="pin-card">
-          {group.length > 1 && <p className="pin-card__count">{visitorCopy.placesHere(group.length)}</p>}
-          {group.map((row) => (
-            <div
-              key={row.id}
-              className={row.id === popupId ? 'pin-card__place is-selected' : 'pin-card__place'}
-            >
-              <PlaceFacts
-                place={row}
-                origin={origin}
-                unit={unit}
-                detailed
-                showName
-                onChoose={(id) => onSelectRef.current(id)}
-              />
-            </div>
-          ))}
-        </div>,
-      )
-    })
-    const card = container.querySelector<HTMLElement>('.pin-card')
-    if (card) {
-      card.style.maxHeight = `${popupCardMaxHeight(map.getContainer().clientHeight)}px`
-    }
     let closedByUs = false
     let cancelFit = false
-    const popup: Popup = new maplibregl.Popup({
-      offset: 18,
-      maxWidth: '280px',
-      closeButton: true,
-      closeOnClick: false,
-      closeOnMove: false,
-      className: 'sw-popup',
-      focusAfterOpen: false,
-    })
-      .setLngLat([place.lng, place.lat])
-      .setDOMContent(container)
-      .addTo(map)
-    popup.on('close', () => {
-      if (closedByUs) return
-      onPopupCloseRef.current()
-    })
+    let popup: Popup | null = null
+    let card: HTMLElement | null = null
 
     const fitInsideMap = (attempt = 0) => {
-      if (cancelFit || attempt > 2) return
+      if (cancelFit || attempt > 2 || !popup) return
       const popEl = popup.getElement()
       if (!popEl) return
       const mapRect = map.getContainer().getBoundingClientRect()
@@ -268,18 +228,65 @@ export function MapCanvas({
       fitInsideMap(attempt + 1)
     }
     const fitAfterCamera = () => fitInsideMap()
-    // The pin focus animation starts in a later effect. Fit after that camera settles.
-    queueMicrotask(() => {
+
+    const open = () => {
       if (cancelFit) return
-      if (map.isMoving()) map.once('moveend', fitAfterCamera)
-      else fitInsideMap()
-    })
+      // React 19 logs an error if flushSync runs inside this effect.
+      flushSync(() => {
+        root.render(
+          <div className="pin-card">
+            {group.length > 1 && <p className="pin-card__count">{visitorCopy.placesHere(group.length)}</p>}
+            {group.map((row) => (
+              <div
+                key={row.id}
+                className={row.id === popupId ? 'pin-card__place is-selected' : 'pin-card__place'}
+              >
+                <PlaceFacts
+                  place={row}
+                  origin={origin}
+                  unit={unit}
+                  detailed
+                  showName
+                  onChoose={(id) => onSelectRef.current(id)}
+                />
+              </div>
+            ))}
+          </div>,
+        )
+      })
+      card = container.querySelector<HTMLElement>('.pin-card')
+      if (card) {
+        card.style.maxHeight = `${popupCardMaxHeight(map.getContainer().clientHeight)}px`
+      }
+      popup = new maplibregl.Popup({
+        offset: 18,
+        maxWidth: '280px',
+        closeButton: true,
+        closeOnClick: false,
+        closeOnMove: false,
+        className: 'sw-popup',
+        focusAfterOpen: false,
+      })
+        .setLngLat([place.lng, place.lat])
+        .setDOMContent(container)
+        .addTo(map)
+      popup.on('close', () => {
+        if (closedByUs) return
+        onPopupCloseRef.current()
+      })
+      queueMicrotask(() => {
+        if (cancelFit) return
+        if (map.isMoving()) map.once('moveend', fitAfterCamera)
+        else fitInsideMap()
+      })
+    }
+    queueMicrotask(open)
 
     return () => {
       cancelFit = true
       map.off('moveend', fitAfterCamera)
       closedByUs = true
-      popup.remove()
+      popup?.remove()
       // Unmount on the next turn so this cleanup does not run inside a React render.
       window.setTimeout(() => root.unmount(), 0)
     }
